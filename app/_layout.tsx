@@ -1,37 +1,50 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import React from 'react';
+
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
-
-import { useColorScheme } from '@/hooks/useColorScheme';
-
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+import {
+  ActivityIndicator,
+  View,
+} from 'react-native';
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+  // Load fonts
+  const [fontsLoaded] = useFonts({
+    'Poppins-bold': require('./../assets/fonts/Poppins-Bold.ttf'),
+    'Poppins-extrabold': require('./../assets/fonts/Poppins-ExtraBold.ttf'),
+    'Poppins-medium': require('./../assets/fonts/Poppins-Medium.ttf'),
+    'Poppins-MediumItalic': require('./../assets/fonts/Poppins-MediumItalic.ttf'),
   });
 
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
-
-  if (!loaded) {
-    return null;
+  // If fonts are not loaded, return a loading indicator
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
   }
 
+  // Once fonts are loaded, return the Stack navigator
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-    </ThemeProvider>
+    <Stack >
+      <Stack.Screen name="index" 
+      options={{
+        title:"Home"
+      }}
+      />
+      <Stack.Screen 
+        name="(tabs)" 
+        options={{ 
+          headerShown: false ,
+        }} 
+      />
+
+      <Stack.Screen 
+        name="(auth)" 
+        options={{ headerShown: false }} 
+      />
+         {/* <Stack.Screen name="(hidden)" options={{ presentation: "modal" }} /> */}
+    </Stack>
   );
 }

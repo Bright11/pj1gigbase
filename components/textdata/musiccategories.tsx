@@ -1,0 +1,30 @@
+export const musiccategories = [
+    { id: 1, name: 'Piano' },
+    { id: 2, name: 'Guitar' },
+    { id: 3, name: 'Violin' },
+    { id: 4, name: 'Drums' },
+    { id: 5, name: 'Flute' },
+    { id: 6, name: 'Saxophone' },
+    { id: 7, name: 'Trumpet' },
+    { id: 8, name: 'Cello' },
+    { id: 9, name: 'Harp' },
+    { id: 10, name: 'Clarinet' },
+    { id: 11, name: 'Trombone' },
+    { id: 12, name: 'Accordion' },
+    { id: 13, name: 'Ukulele' },
+    { id: 14, name: 'Banjo' },
+    { id: 15, name: 'Mandolin' },
+    { id: 16, name: 'Oboe' },
+    { id: 17, name: 'Bassoon' },
+    { id: 18, name: 'Xylophone' },
+    { id: 19, name: 'Bagpipes' },
+    { id: 20, name: 'Harmonica' },
+    { id: 21, name: 'Tambourine' },
+    { id: 22, name: 'Sitar' },
+    { id: 23, name: 'Didgeridoo' },
+    { id: 24, name: 'Bass Guitar' },
+    { id: 25, name: 'Synthesizer' },
+
+    // Add more items if needed
+  ];
+  

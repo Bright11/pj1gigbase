@@ -7,6 +7,12 @@ const tintColorLight = '#0a7ea4';
 const tintColorDark = '#fff';
 
 export const Colors = {
+  appcolor:{
+    promarycolor:"#F3B640",
+    text: 'white',
+    textblack:"black",
+    begreen:"#5E8D48"
+  },
   light: {
     text: '#11181C',
     background: '#fff',
