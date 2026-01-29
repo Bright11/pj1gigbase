@@ -204,7 +204,7 @@ const Profile = () => {
           </View>
         </Pressable>
 
-        <Pressable
+        {/* <Pressable
           style={style.itemviews}
           onPress={() => router.replace("./Sell")}
         >
@@ -212,7 +212,7 @@ const Profile = () => {
             <Ionicons name="add-circle-sharp" size={24} color="black" />
             <Text>Post Add</Text>
           </View>
-        </Pressable>
+        </Pressable> */}
       </View>
     </ScrollView>
   );

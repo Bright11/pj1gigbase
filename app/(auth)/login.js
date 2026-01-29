@@ -21,6 +21,7 @@ import { auth, db } from "@/components/firebase/Firebaseconfig";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Feather from "@expo/vector-icons/Feather";
 // import { SafeAreaView } from 'react-native';
 
 export default function Login() {
@@ -28,6 +29,7 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [getuserdata, setGetuserdata] = useState("");
+  const [viewpasswordicon, setViewpasswordicon] = useState(true);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -117,13 +119,20 @@ export default function Login() {
             placeholder="Enter your Email"
             onChangeText={(email) => setEmail(email)}
           />
-          <TextInput
-            style={style.input}
-            secureTextEntry={true}
-            placeholder="Enter your password"
-            onChangeText={(password) => setPassword(password)}
-          />
-
+          <View style={style.viewpassword}>
+            <TextInput
+              style={style.input}
+              secureTextEntry={viewpasswordicon}
+              placeholder="Enter your password"
+              onChangeText={(password) => setPassword(password)}
+            />
+            <Pressable
+              onPress={() => setViewpasswordicon(!viewpasswordicon)}
+              style={style.vieweyeicon}
+            >
+              <Feather name="eye" size={24} color="black" />
+            </Pressable>
+          </View>
           <Button onPress={login} text="Login" />
           <Pressable
             onPress={register}
@@ -133,6 +142,15 @@ export default function Login() {
               Don't have an account?{" "}
             </Text>
           </Pressable>
+
+          {/* <Pressable
+            onPress={() => router.replace("/(auth)/forgotpassword")}
+            style={{ color: Colors.appcolor.promarycolor }}
+          >
+            <Text style={{ textAlign: "center", marginTop: 8 }}>
+              Forgot password
+            </Text>
+          </Pressable> */}
 
           <Pressable
             onPress={() => router.push("/(tabs)/Home")}
@@ -249,5 +267,18 @@ const style = StyleSheet.create({
   titletoptext: {
     fontFamily: "Poppins-extrabold",
     fontSize: 16,
+  },
+  viewpassword: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  vieweyeicon: {
+    // padding: 8,
+    marginTop: 5,
+    // borderRadius: 8,
+    // backgroundColor: "#fff",
+    alignSelf: "center",
+    marginBottom: 30,
   },
 });

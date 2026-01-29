@@ -1,7 +1,7 @@
 import React from "react";
 
 import { Tabs } from "expo-router";
-import { Pressable } from "react-native";
+import { Platform, Pressable } from "react-native";
 
 import useUserdata from "@/components/getuserdata";
 import { Colors } from "@/constants/Colors";
@@ -9,8 +9,10 @@ import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { useSafeAreaFrame } from "react-native-safe-area-context";
 
 function MyBottomTabsNav() {
+  const insets = useSafeAreaFrame();
   const userdata = useUserdata();
   return (
     <Tabs
@@ -26,9 +28,11 @@ function MyBottomTabsNav() {
           backgroundColor: Colors.appcolor.begreen,
           paddingVertical: 8,
           paddingHorizontal: 5,
-          height: 60,
-          paddingBottom: 6,
+          // height: 60,
+          // paddingBottom: 12,
           paddingTop: 6,
+          paddingBottom: Platform.OS === "android" ? 10 : 0,
+          height: Platform.OS === "android" ? 70 : 60,
         },
 
         tabBarLabelStyle: {

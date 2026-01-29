@@ -1,7 +1,7 @@
 import React from "react";
 
 import { Tabs } from "expo-router";
-import { Pressable } from "react-native";
+import { Platform, Pressable } from "react-native";
 
 import useUserdata from "@/components/getuserdata";
 import { Colors } from "@/constants/Colors";
@@ -23,11 +23,13 @@ function NoneAuthBootomtab() {
         },
         tabBarStyle: {
           backgroundColor: Colors.appcolor.begreen,
-          paddingVertical: 8,
+          paddingVertical: 20,
           paddingHorizontal: 5,
-          height: 60,
-          paddingBottom: 6,
+          // height: 60,
+          // paddingBottom: 6,
           paddingTop: 6,
+          paddingBottom: Platform.OS === "android" ? 10 : 0,
+          height: Platform.OS === "android" ? 70 : 60,
         },
 
         tabBarLabelStyle: {

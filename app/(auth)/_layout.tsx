@@ -22,6 +22,7 @@ export default function Authlayout() {
     <Stack.Screen name="login"
     
     />
+    <Stack.Screen name="Forgotpassword"/>
     </Stack>
   );
 }
