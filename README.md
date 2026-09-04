@@ -1,50 +1,79 @@
-# Welcome to your Expo app 👋
+src/
+├── app/
+│   └── (auth)/
+│       ├── _layout.tsx
+│       ├── login.tsx
+│       └── register.tsx
+│
+├── features/
+│   └── auth/
+│       ├── AuthHeader.tsx
+│       ├── LoginForm.tsx
+│       └── RegisterForm.tsx
+│
+├── services/
+│   ├── api.ts
+│   └── auth.service.ts
+│
+├── store/
+│   └── auth.store.ts
+│
+└── types/
+    └── auth.ts
+What each part does
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+app/(auth)
+Only Expo Router screens/navigation.
 
-## Get started
+features/auth
+Actual UI for authentication.
 
-1. Install dependencies
+services/api.ts
+Axios configuration and Django API connection.
 
-   ```bash
-   npm install
-   ```
+services/auth.service.ts
+Calls Django endpoints:
 
-2. Start the app
+POST /auth/login/
+POST /auth/register/
 
-   ```bash
-    npx expo start
-   ```
+and later:
 
-In the output, you'll find options to open the app in a
+POST /auth/refresh/
+GET /auth/me/
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+store/auth.store.ts
+Zustand state:
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+user
+accessToken
+refreshToken
+isAuthenticated
+login()
+logout()
 
-## Get a fresh project
+types/auth.ts
+TypeScript interfaces for users, login responses, registration data, etc.
 
-When you're ready, run:
+<!-- How to check if there are any typscrip errors -->
+npx tsc --noEmit
 
-```bash
-npm run reset-project
-```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Login response data
+const data = await login({
+  username: username.trim(),
+  password,
+});
 
-## Learn more
+console.log('LOGIN RESPONSE:', data);
+console.log('USER:', data.user);
+console.log('ACCESS TOKEN:', data.access);
+console.log('REFRESH TOKEN:', data.refresh);
 
-To learn more about developing your project with Expo, look at the following resources:
+setAuth(
+  data.user,
+  data.access,
+  data.refresh
+);
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+console.log('AUTH STATE UPDATED');

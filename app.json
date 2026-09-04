@@ -7,11 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "pj1gigbase",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/images/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.pj1gigbase.app",
@@ -27,8 +22,9 @@
       "package": "com.pj1gigbase.app",
       "versionCode": 6,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundColor": "#ffffff",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
       }
     },
     "web": {
@@ -41,10 +37,16 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "The app accesses your photos to let yoou upload and share them on our app"
+          "photosPermission": "The app accesses your photos to let you upload and share them on our app"
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-splash-screen",
+      "expo-status-bar",
+      "expo-web-browser",
+      "expo-image",
+      "expo-secure-store",
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true

@@ -3,9 +3,11 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-        "@firebase/auth": ["./node_modules/@firebase/auth/dist/index.rn.d.ts"],
       "@/*": [
-        "./*"
+        "./src/*"
+      ],
+      "@/assets/*": [
+        "./assets/*"
       ]
     }
   },
@@ -14,5 +16,5 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
-, "app/(tabs)/Sell.js", "components/homecomponets/Servicescomponet.js", "app/hidden/[Servicedetails].js", "app/hidden/Uploadvideo.tsx", "components/homecomponets/Number/PhoneNumber.js", "components/botton/Button.tsx", "app/hidden/Saved.js", "app/hidden/Messages.js", "app/(auth)/signup.js", "app/(auth)/login.js", "components/homecomponets/AllcategoryIcons.js", "app/(tabs)/_layout.js", "app/(tabs)/_layout.js", "app/hidden/Advertcategory.js", "app/(tabs)/Home.js", "components/homecomponets/SearchBar.js", "components/homecomponets/Searchdata.js", "components/homecomponets/TopCategory.js", "components/ImageUploader.js", "components/VideoUploader.js", "app/(auth)/UserupdateForm.js" , "app/(tabs)/Services.js", "app/hidden/Myregion.js", "app/hidden/Mypost.js", "app/hidden/Editpost.js", "app/index.js", "app/(auth)/Deleteaccount.js" ]
+  ]
 }
