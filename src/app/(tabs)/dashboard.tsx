@@ -1,10 +1,31 @@
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, TouchableOpacity } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Link, useRoute } from 'expo-router';
+import { Link, useRoute,router, useNavigation } from 'expo-router';
+import { useLayoutEffect } from 'react';
+import { Mycolors } from '@/constants/mycolors';
 
 export default function DashboardScreen() {
-    const router =useRoute()
+    // const router =useRoute()
   // TODO: replace with real values once connected to backend
+
+   const navigation = useNavigation()
+  
+      useLayoutEffect(()=>{
+        navigation.setOptions({
+          headerShown: true,
+          title:"",
+          headerLeft:()=>(
+            <TouchableOpacity onPress={()=> navigation.goBack()}>
+              <Ionicons name="arrow-back" size={24} color="#007AFF" />
+            </TouchableOpacity>
+          ),
+           headerRight:()=>(
+            <TouchableOpacity>
+              <Text style={{color:Mycolors.whitecolor}}>Dashboard</Text>
+            </TouchableOpacity>
+          )
+        })
+      })
   const postsCount = 12;
   const unreadCount = 3;
 
@@ -38,6 +59,17 @@ export default function DashboardScreen() {
 
       {/* Actions */}
       <View style={styles.actionList}>
+        <Link href="/chat/inbox"
+          style={[styles.actionRow, styles.actionRowBorder]}
+          
+        >
+          <View style={styles.actionLeft}>
+            <Ionicons name="add-circle-outline" size={20} color="#333" />
+            <Text style={styles.actionLabel}>My Inbox</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#999" />
+        </Link>
+
         <Link href="/post-talent"
           style={[styles.actionRow, styles.actionRowBorder]}
           
@@ -59,6 +91,28 @@ export default function DashboardScreen() {
           </View>
           <Ionicons name="chevron-forward" size={18} color="#999" />
         </Link>
+
+         <Pressable
+          style={[styles.actionRow, styles.actionRowBorder]}
+          onPress={()=>router.push('/booking/bookingrequest') }
+        >
+          <View style={styles.actionLeft}>
+            <Ionicons name="person-outline" size={20} color="#333" />
+            <Text style={styles.actionLabel}>Booking request</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#999" />
+        </Pressable>
+
+        <Pressable
+          style={[styles.actionRow, styles.actionRowBorder]}
+          onPress={()=>router.push('/booking/my-bookings') }
+        >
+          <View style={styles.actionLeft}>
+            <Ionicons name="person-outline" size={20} color="#333" />
+            <Text style={styles.actionLabel}>My Booking</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#999" />
+        </Pressable>
 
         <Pressable
           style={[styles.actionRow, styles.actionRowBorder]}

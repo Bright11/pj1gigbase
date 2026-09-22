@@ -1,6 +1,6 @@
 import { api } from "./api";
 
-import type { CreateTalentRequest,Talent, TalentVideoSource } from "@/types/Talent";
+import type { CreateTalentRequest,PublicTalent,PublicTalentPagination,Talent, TalentVideoSource } from "@/types/Talent";
 
 
 export const createTalent= async(
@@ -130,3 +130,67 @@ export const deleteTalentVideo = async (videoId:number):Promise<any>=>{
     );
     return response.data
 }
+
+
+// export const getPublicTalents = async (
+//   page: number = 1,
+// ): Promise<PublicTalentPagination> => {
+//   const response = await api.get(
+//     `/api/public-talents/?page=${page}`,
+//   );
+
+//   return response.data;
+// };
+
+// export const getPublicTalents = async ( 
+//   page: number = 1, search: string = '', 
+// ): Promise<PublicTalentPagination> => {
+//    const response = await api.get(
+//      '/api/public-talents/', { params: { page, q: search.trim() || undefined, }, }, ); 
+//      return response.data;
+//      };
+
+
+export const getPublicTalents = async (
+  page: number = 1,
+  search: string = '',
+): Promise<PublicTalentPagination> => {
+
+  console.log(
+    'PUBLIC TALENT REQUEST:',
+    page,
+    search,
+  );
+
+  const response = await api.get(
+    '/api/public-talents/',
+    {
+      params: {
+        page,
+        q: search.trim() || undefined,
+      },
+    },
+  );
+
+  console.log(
+    'PUBLIC TALENT URL:',
+    response.config.url,
+  );
+
+  return response.data;
+};
+
+
+export const getPublicTalentBySlug = async (
+  slug: string,
+): Promise<PublicTalent> => {
+  const response = await api.get(
+    `/api/public-talents/${slug}/`,
+  );
+
+  return response.data;
+};
+
+
+
+

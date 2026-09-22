@@ -2,8 +2,6 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Image,
-  Linking,
   Pressable,
   StyleSheet,
   Text,
@@ -15,27 +13,32 @@ import {
   useVideoPlayer,
 } from 'expo-video';
 
-import type {
-  TalentVideo,
-} from '@/types/Talent';
+import type { TalentVideo } from '@/types/Talent';
 import { deleteTalentVideo } from '@/services/talent.service';
 import { Mycolors } from '@/constants/mycolors';
 
 interface TalentVideoListProps {
   videos: TalentVideo[];
-  onRefresh: ()=>Promise<void>
+  onRefresh: () => Promise<void>;
 }
 
 interface TalentVideoCardProps {
   video: TalentVideo;
-  onRefresh:()=> Promise<void>;
+  onRefresh: () => Promise<void>;
 }
 
 function TalentVideoCard({
-  video,onRefresh
+  video,
+  onRefresh,
 }: TalentVideoCardProps) {
-  const [loading, setLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const player = useVideoPlayer(
+    video.video_url ?? '',
+    (player) => {
+      player.loop = false;
+    },
+  );
 
   const handleDelete = () => {
     Alert.alert(
@@ -74,219 +77,47 @@ function TalentVideoCard({
     );
   };
 
-  const player = useVideoPlayer(
-    video.source === 'cloudinary'
-      ? video.video_url ?? ''
-      : null,
-    (player) => {
-      player.loop = false;
-    }
+  return (
+    <View style={styles.card}>
+      <VideoView
+        player={player}
+        style={styles.video}
+        contentFit="cover"
+        nativeControls
+      />
+
+      <TouchableOpacity
+        style={styles.deleteButton}
+        onPress={handleDelete}
+        disabled={isDeleting}
+      >
+        {isDeleting ? (
+          <ActivityIndicator />
+        ) : (
+          <Text style={styles.deleteButtonText}>
+            Delete
+          </Text>
+        )}
+      </TouchableOpacity>
+    </View>
   );
-
-  const openExternalVideo = async () => {
-    if (!video.url) {
-      return;
-    }
-
-    try {
-      setLoading(true);
-      await Linking.openURL(video.url);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ==============================
-  // GIGBASE / CLOUDINARY
-  // ==============================
-
-  if (video.source === 'cloudinary') {
-    if (!video.video_url) {
-      return null;
-    }
-
-    return (
-      <View style={styles.card}>
-        <View style={styles.videoContainer}>
-          <VideoView
-            player={player}
-            style={styles.video}
-            contentFit="cover"
-            nativeControls
-          />
-        </View>
-
-        <Text style={styles.sourceText}>
-          GIGBASE Video
-        </Text>
-        <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={handleDelete}>
-          {isDeleting?(
-            <ActivityIndicator/>
-          ):(
-            <Text style={styles.deleteButtonText}>Delete</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  // ==============================
-  // YOUTUBE
-  // ==============================
-
-  if (video.source === 'youtube') {
-    const youtubeId =
-      getYouTubeVideoId(video.url);
-
-    return (
-      <View style={styles.card}>
-        <Pressable
-          style={styles.thumbnailContainer}
-          onPress={openExternalVideo}
-          disabled={loading}
-        >
-          {youtubeId ? (
-            <Image
-              source={{
-                uri: `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`,
-              }}
-              style={styles.thumbnail}
-            />
-          ) : (
-            <View style={styles.fallbackThumbnail}>
-              <Text style={styles.fallbackText}>
-                YouTube 
-              </Text>
-              
-            </View>
-          )}
-
-          <View style={styles.playButton}>
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.playIcon}>
-                ▶
-              </Text>
-            )}
-          </View>
-        </Pressable>
-
-        <Text style={styles.sourceText}>
-          YouTube
-        </Text>
-        <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={handleDelete}>
-          {isDeleting?(
-            <ActivityIndicator/>
-          ):(
-            <Text style={styles.deleteButtonText}>Delete</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  // ==============================
-  // TIKTOK
-  // ==============================
-
-  if (video.source === 'tiktok') {
-    return (
-      <View style={styles.card}>
-        <Pressable
-          style={styles.tiktokContainer}
-          onPress={openExternalVideo}
-          disabled={loading}
-        >
-          <Text style={styles.tiktokLogo}>
-            ♪
-          </Text>
-
-          <Text style={styles.tiktokText}>
-            TikTok
-          </Text>
-
-          <View style={styles.playButton}>
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.playIcon}>
-                ▶
-              </Text>
-            )}
-          </View>
-        </Pressable>
-
-        <Text style={styles.sourceText}>
-          TikTok
-        </Text>
-        <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={handleDelete}>
-          {isDeleting?(
-            <ActivityIndicator/>
-          ):(
-            <Text style={styles.deleteButtonText}>Delete</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  return null;
-}
-
-function getYouTubeVideoId(
-  url: string | null
-): string | null {
-  if (!url) {
-    return null;
-  }
-
-  try {
-    const parsedUrl = new URL(url);
-
-    // https://www.youtube.com/watch?v=xxxxx
-    if (
-      parsedUrl.hostname.includes(
-        'youtube.com'
-      )
-    ) {
-      return parsedUrl.searchParams.get('v');
-    }
-
-    // https://youtu.be/xxxxx
-    if (
-      parsedUrl.hostname === 'youtu.be'
-    ) {
-      return parsedUrl.pathname.replace(
-        '/',
-        ''
-      );
-    }
-
-    return null;
-  } catch {
-    return null;
-  }
 }
 
 export default function TalentVideoList({
-  videos,onRefresh,
+  videos,
+  onRefresh,
 }: TalentVideoListProps) {
-  // delete videos
+  const gigbaseVideos = videos.filter(
+    (video) =>
+      video.source === 'cloudinary' &&
+      !!video.video_url,
+  );
 
-
-// the end of delete video
-  if (!videos.length) {
+  if (!gigbaseVideos.length) {
     return (
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyText}>
-          No videos added yet.
+          No GIGBASE video added yet.
         </Text>
       </View>
     );
@@ -294,154 +125,62 @@ export default function TalentVideoList({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.existingTitle}>
-        Added Videos
+      <Text style={styles.title}>
+        Your GIGBASE Video
       </Text>
 
-      <View style={styles.grid}>
-        {videos.map((video) => (
-          <TalentVideoCard
-            key={video.id}
-            video={video}
-            onRefresh={onRefresh}
-          />
-        ))}
-      </View>
+      {gigbaseVideos.map((video) => (
+        <TalentVideoCard
+          key={video.id}
+          video={video}
+          onRefresh={onRefresh}
+        />
+      ))}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 24,
+    marginTop: 20,
   },
 
-  existingTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 10,
-  },
-
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
+  title: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 12,
   },
 
   card: {
-    width: '48%',
-  },
-
-  videoContainer: {
-    width: '100%',
-    aspectRatio: 16 / 10,
-    borderRadius: 10,
+    borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: '#111',
   },
 
   video: {
     width: '100%',
-    height: '100%',
+    aspectRatio: 16 / 9,
   },
 
-  thumbnailContainer: {
-    width: '100%',
-    aspectRatio: 16 / 10,
-    borderRadius: 10,
-    overflow: 'hidden',
-    backgroundColor: '#111',
-    position: 'relative',
-  },
-
-  thumbnail: {
-    width: '100%',
-    height: '100%',
-  },
-
-  fallbackThumbnail: {
-    flex: 1,
+  deleteButton: {
+    marginTop: 8,
+    paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#222',
+    borderRadius: 8,
+    backgroundColor:Mycolors.redcolor
   },
 
-  fallbackText: {
-    color: '#fff',
-    fontSize: 16,
+  deleteButtonText: {
+    fontSize: 14,
     fontWeight: '600',
-  },
-
-  tiktokContainer: {
-    width: '100%',
-    aspectRatio: 16 / 10,
-    borderRadius: 10,
-    overflow: 'hidden',
-    backgroundColor: '#111',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  tiktokLogo: {
-    color: '#fff',
-    fontSize: 38,
-    fontWeight: '700',
-  },
-
-  tiktokText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-    marginTop: 4,
-  },
-
-  playButton: {
-    position: 'absolute',
-    left: '50%',
-    top: '50%',
-    width: 48,
-    height: 48,
-    marginLeft: -24,
-    marginTop: -24,
-    borderRadius: 24,
-    backgroundColor:
-      'rgba(0,0,0,0.65)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  playIcon: {
-    color: '#fff',
-    fontSize: 18,
-    marginLeft: 3,
-  },
-
-  sourceText: {
-    marginTop: 7,
-    fontSize: 13,
-    fontWeight: '600',
+    color:Mycolors.whitecolor
   },
 
   emptyContainer: {
-    paddingVertical: 20,
-    alignItems: 'center',
+    marginTop: 16,
   },
 
   emptyText: {
     fontSize: 14,
-    color: '#777',
   },
-  deleteButton: {
-  marginTop: 8,
-  paddingVertical: 8,
-  alignItems: 'center',
-  borderRadius: 8,
-  backgroundColor:Mycolors.redcolor
-},
-
-deleteButtonText: {
-  fontSize: 14,
-  fontWeight: '600',
-  color:Mycolors.whitecolor
-},
 });

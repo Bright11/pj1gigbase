@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "489826066196",
+    "project_id": "pj1-gigbase",
+    "storage_bucket": "pj1-gigbase.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:489826066196:android:d841c8a2a820c2c4a22c01",
+        "android_client_info": {
+          "package_name": "com.pj1gigbase.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDxRX24ISv1KsYotHyvYtBg5fQxk_j8Wtw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

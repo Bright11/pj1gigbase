@@ -165,6 +165,7 @@ export default function TalentVideoSection({
       {/* SOURCE SELECTOR */}
 
       <View style={styles.sourceContainer}>
+          
 
         <TouchableOpacity
           style={[
@@ -260,6 +261,8 @@ export default function TalentVideoSection({
           )}
         </>
       )}
+   
+       
 
       {/* YOUTUBE / TIKTOK */}
 
@@ -325,11 +328,15 @@ export default function TalentVideoSection({
               )}
             </View>
           ))} */}
-        <TalentVideoList videos={talent.videos?? []}
-        onRefresh={onRefresh}
-        />
+        {/* <TalentVideoList 
+        /> */}
+        <TalentVideoList
+  videos={talent.videos ?? []}
+  onRefresh={onRefresh}
+/>
         </View>
       )}
+      
 
     </View>
   );

@@ -9,6 +9,7 @@ import type{
     RegisterRequest,
     User
 } from '@/types/auth';
+import { registerAndSavePushToken } from './notification.service';
 
 
 const ACCESS_TOKEN_KEY='access_token';
@@ -38,6 +39,12 @@ export const login = async (
     authData.access,
     authData.refresh
    )
+  console.log('STARTING PUSH TOKEN REGISTRATION');
+
+await registerAndSavePushToken();
+
+console.log('PUSH TOKEN REGISTRATION FINISHED');
+
    return authData
 }
 
@@ -63,7 +70,8 @@ export const register = async (data:RegisterRequest):Promise<AuthResponse>=>{
             authData.user,
             authData.access,
             authData.refresh
-        )
+        );
+        await registerAndSavePushToken()
     }
     return authData
 }
@@ -116,3 +124,4 @@ export const clearStoredTokens = async ()=>{
     await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY)
     await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY)
 }
+

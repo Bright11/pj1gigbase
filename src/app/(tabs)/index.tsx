@@ -6,7 +6,7 @@ import { Mycolors } from '@/constants/mycolors'
 import Category from '@/features/talents/Category'
 
 
-export default function home() {
+export default function HomeScreen() {
   return (
     <SafeAreaView style={{backgroundColor:"white",flex:1}}>
       <StatusBar backgroundColor={Mycolors.primarycolor}/>

@@ -12,6 +12,10 @@ import { router } from 'expo-router';
 import { login } from '@/services/auth.service';
 import { useAuthStore } from '@/store/auth.store';
 import { Mycolors } from '@/constants/mycolors';
+import {
+  registerAndSavePushToken,
+} from '@/services/notification.service';
+import { AuthHeader } from './AuthHeader';
 
 export function LoginForm() {
   const setAuth = useAuthStore((state) => state.setAuth);
@@ -70,6 +74,7 @@ export function LoginForm() {
 
   return (
     <View style={styles.container}>
+
       <Text style={styles.label}>Username or Email</Text>
 
       <TextInput
@@ -133,6 +138,9 @@ export function LoginForm() {
 const styles = StyleSheet.create({
   container: {
     width: '100%',
+    //  backgroundColor:Mycolors.primarycolor,
+     borderRadius:10,
+    
   },
 
   label: {
@@ -149,7 +157,8 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     fontSize: 16,
     borderColor:Mycolors.graycolor,
-    color:Mycolors.whitecolor
+    color:Mycolors.whitecolor,
+    backgroundColor: Mycolors.blackcolor,
   },
 
   error: {

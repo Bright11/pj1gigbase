@@ -89,9 +89,12 @@ export default function CategoryList() {
           const data = await getcategories();
           setCategories(data)
           
-        }catch(error){
+        }
+        catch(error){
           console.log("Failed to load categories", error)
           setErro("Unable to load categories")
+          
+          
         }finally{
           setIsloading(false)
         }

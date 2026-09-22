@@ -4,16 +4,17 @@ import { Mycolors } from '@/constants/mycolors'
 import { ProtectedRoute } from '@/utils/ProtectedRoute'
 import { logout } from '@/services/auth.service'
 import { useAuthStore } from '@/store/auth.store'
-import { Redirect } from 'expo-router'
+import { Redirect, router } from 'expo-router'
 
 export default function profile() {
     const {isAuthenticated,isLoading}=useAuthStore()
-    if(isLoading){
-        return null
-    }
-    if(!isAuthenticated){
-        return <Redirect href="/login"/>
-    }
+    // if(isLoading){
+    //     return null
+    // }
+    // if(!isAuthenticated){
+    //     return <Redirect href="/login"/>
+    //     //  router.push('/login'); 
+    // }
       const handlelogout = async()=>{
         await logout()
     }

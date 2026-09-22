@@ -1,4 +1,4 @@
-import { Redirect } from "expo-router";
+import { Redirect, router } from "expo-router";
 import { ReactNode } from "react";
 import { useAuthStore } from "@/store/auth.store";
 
@@ -19,6 +19,7 @@ export function ProtectedRoute({children}:ProtectedRouteProps){
     }
     if(!isAuthenticated){
         return <Redirect href="/login"/>
+        //  router.push('/login'); 
     }
     return <>{children}</>
 }

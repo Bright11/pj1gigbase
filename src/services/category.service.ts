@@ -4,6 +4,7 @@ import type{
 } from  '@/types/category'
 
 export const getcategories = async():Promise<Category[]> =>{
-    const response = await publicAPI.get<Category[]>('/api/categories/');
+    const response = await publicAPI.get<Category[]>('/api/categories/')
+    
     return response.data
 }
