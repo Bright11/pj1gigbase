@@ -6,7 +6,10 @@ import { api } from '@/services/api';
 import Constants from 'expo-constants'
 import { router } from 'expo-router';
 
+
 // npx expo install expo-notifications expo-device
+
+
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
