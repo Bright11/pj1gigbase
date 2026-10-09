@@ -1,31 +1,19 @@
-import { View, Text, StyleSheet, TextInput } from 'react-native';
-import { ImageBackground } from 'expo-image';
+
+import React from 'react';
+import { StyleSheet, View } from 'react-native';
+
+import HeroBackground from '@/utils/HeroBackground';
 import CategoryList from './CategoryList';
+
+import { Mycolors } from '@/constants/mycolors';
 
 export default function Category() {
   return (
     <View style={styles.container}>
-      {/* Fixed hero */}
-      <ImageBackground
-        source={require('@/assets/images/pj1gif.gif')}
-        style={styles.hero}
-        contentFit="cover"
-      >
-        <View style={styles.overlay}>
-          <Text style={styles.heading}>Find the right talent</Text>
+      <HeroBackground />
 
-          <TextInput
-            style={styles.search}
-            placeholder="Search by category"
-            placeholderTextColor="#777"
-          />
-        </View>
-      </ImageBackground>
-
-      {/* Everything below the hero scrolls as one unit */}
-      <View style={{ flex: 1 }}>
+      <View style={styles.categories}>
         <CategoryList />
-       
       </View>
     </View>
   );
@@ -34,29 +22,11 @@ export default function Category() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-     backgroundColor: '#fff',
+    backgroundColor: Mycolors.whitecolor,
   },
-  hero: {
-    width: '100%',
-    height: 210,
-  },
-  overlay: {
+
+  categories: {
     flex: 1,
-    justifyContent: 'flex-end',
-    padding: 20,
-    backgroundColor: 'rgba(0,0,0,0.2)',
-  },
-  heading: {
-    color: '#fff',
-    fontSize: 26,
-    fontWeight: '700',
-    marginBottom: 14,
-  },
-  search: {
-    height: 50,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    fontSize: 16,
   },
 });
+

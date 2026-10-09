@@ -13,9 +13,15 @@ export const createBooking = async (
 };
 
 
+
 export const updateBookingStatus = async (
   bookingId: number,
-  status: 'accepted' | 'declined',
+   status:
+    | 'pending'
+    | 'accepted'
+    | 'declined'
+    | 'cancelled'
+    | 'completed'
 ) => {
   const response = await api.patch(
     `/api/booking/${bookingId}/action/`,
@@ -26,9 +32,6 @@ export const updateBookingStatus = async (
 
   return response.data;
 };
-
-
-
 export const getTalentBookings = async (): Promise<Booking[]> => {
   const response = await api.get<Booking[]>(
     '/api/booking/talent/',

@@ -8,6 +8,12 @@ export interface TalentCategory {
   created_at: string;
 }
 
+export type TalentLevel =
+  | 'beginner'
+  | 'intermediate'
+  | 'advanced'
+  | 'professional_master';
+
 export interface TalentGalleryImage {
   id: number;
   caption: string | null;
@@ -29,6 +35,7 @@ export interface Talent {
   slug: string;
   title: string;
   bio?: string | null;
+   level: TalentLevel | '';
 
   category_details: TalentCategory | null;
 
@@ -57,6 +64,7 @@ export interface CreateTalentRequest {
   hourly_rate?: string;
   fixed_rate?: string;
   currency: string;
+  level: TalentLevel;
 }
 
 
@@ -82,33 +90,56 @@ export interface PublicTalentVideo {
   caption: string | null;
 }
 
+
+
+export interface TalentReview {
+  id: number;
+  reviewer_name: string;
+  rating: number;
+  comment: string;
+
+}
+export interface TalentSkill {
+  id: number;
+  skill: {
+    id: number;
+    name: string;
+  };
+}
+
 export interface PublicTalent {
   id: number;
-  user_id:number,
+  user_id: number;
   stage_name: string;
   slug: string;
   title: string;
+  level?: TalentLevel;
+  bio: string;
 
   user_details: {
     username: string;
     email: string;
-    id:number
+    id: number;
   };
 
   hourly_rate: string;
   fixed_rate: string;
   currency: string;
-  is_charges_enabled:boolean;
-  is_price_negotiable:boolean
+  is_charges_enabled: boolean;
+  is_price_negotiable: boolean;
 
   gallery_images: PublicTalentImage[];
 
   is_available: boolean;
+
   rating: string;
   total_bookings: number;
 
-  video_details: PublicTalentVideo[];
+  review_count: number;
+  reviews: TalentReview[];
 
+  video_details: PublicTalentVideo[];
+  skills: TalentSkill[];
   userprofile: {
     phone_number: string;
     date_of_birth: string | null;
@@ -121,6 +152,8 @@ export interface PublicTalent {
     gender: string | null;
   };
 }
+
+
 
 export interface PublicTalentPagination {
   links: {

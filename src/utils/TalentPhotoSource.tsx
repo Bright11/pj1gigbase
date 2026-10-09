@@ -12,7 +12,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 
 
-import { uploadGalleryImage } from '@/services/talent.service';
+import { deleteGalleryImage, uploadGalleryImage } from '@/services/talent.service';
 import { getApiErrorMessage } from '@/services/api.error';
 import { Talent } from '@/types/Talent';
 
@@ -97,6 +97,45 @@ export default function TalentPhotoSection({
     }
   };
 
+
+  const handleDeletePhoto = (imageId: number) => {
+  Alert.alert(
+    'Delete Photo',
+    'Are you sure you want to delete this photo?',
+    [
+      {
+        text: 'Cancel',
+        style: 'cancel',
+      },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            setIsUploading(true);
+
+            await deleteGalleryImage(imageId);
+
+            await onRefresh();
+
+            Alert.alert(
+              'Success',
+              'Photo deleted successfully.'
+            );
+          } catch (error) {
+            Alert.alert(
+              'Delete Failed',
+              getApiErrorMessage(error)
+            );
+          } finally {
+            setIsUploading(false);
+          }
+        },
+      },
+    ]
+  );
+};
+
   return (
     <View style={styles.container}>
       <Text style={styles.sectionTitle}>
@@ -108,19 +147,29 @@ export default function TalentPhotoSection({
       </Text>
 
       <View style={styles.imageGrid}>
-        {images.map((image) => (
-          <View
-            key={image.id}
-            style={styles.imageWrapper}
-          >
-            <Image
-              source={{
-                uri: image.image_url!,
-              }}
-              style={styles.image}
-            />
-          </View>
-        ))}
+       {images.map((image) => (
+  <View
+    key={image.id}
+    style={styles.imageWrapper}
+  >
+    <Image
+      source={{
+        uri: image.image_url!,
+      }}
+      style={styles.image}
+    />
+
+    <TouchableOpacity
+      style={styles.deleteButton}
+      onPress={() => handleDeletePhoto(image.id)}
+      disabled={isUploading}
+    >
+      <Text style={styles.deleteButtonText}>
+        ×
+      </Text>
+    </TouchableOpacity>
+  </View>
+))}
 
         {remainingSlots > 0 && (
           <TouchableOpacity
@@ -229,5 +278,24 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#666',
   },
+
+  deleteButton: {
+  position: 'absolute',
+  top: 6,
+  right: 6,
+  width: 28,
+  height: 28,
+  borderRadius: 14,
+  backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+
+deleteButtonText: {
+  color: '#ffffff',
+  fontSize: 20,
+  lineHeight: 22,
+  fontWeight: '700',
+},
 });
 

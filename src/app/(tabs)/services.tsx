@@ -10,13 +10,17 @@ import {
 
 import { Mycolors } from '@/constants/mycolors';
 import PublicTalentList from '@/utils/PublicTalentList';
-import { useNavigation } from 'expo-router';
+import { useLocalSearchParams, useNavigation } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
+
 
 export default function ServiceScreen() {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] =
     useState('');
+    const {category} = useLocalSearchParams<{ category?: string }>();
+
+    console.log('Category from params:', category);
    
 
   useEffect(() => {
@@ -45,6 +49,7 @@ export default function ServiceScreen() {
 
       <View style={styles.listContainer}>
         <PublicTalentList
+         category={category}
           search={debouncedSearch}
         />
       </View>

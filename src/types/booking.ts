@@ -25,7 +25,7 @@ export interface Booking {
   venue_address: string;
   offered_rate: string | null;
   currency: string;
-  status:
+status:
     | 'pending'
     | 'accepted'
     | 'declined'

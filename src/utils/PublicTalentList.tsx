@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -12,15 +11,20 @@ import {
 import type { PublicTalent } from '@/types/Talent';
 import { getPublicTalents } from '@/services/talent.service';
 import { getApiErrorMessage } from '@/services/api.error';
+import { getUserCountryCode } from '@/services/country.service';
+import { useAuthStore } from '@/store/auth.store';
 
 import PublicTalentCard from './PublicTalentCard';
 
+
 interface PublicTalentListProps {
   search: string;
+  category?: string;
 }
 
 export default function PublicTalentList({
   search,
+  category
 }: PublicTalentListProps) {
   const [talents, setTalents] = useState<PublicTalent[]>([]);
   const [page, setPage] = useState(1);
@@ -31,6 +35,47 @@ export default function PublicTalentList({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
+
+  const [country, setCountry] = useState<string | undefined>(
+    undefined,
+  );
+  
+
+  const user = useAuthStore((state) => state.user);
+
+  
+  useEffect(() => {
+    let isMounted = true;
+
+    const resolveCountry = async () => {
+      const profileCountry =
+        user?.profile?.country?.trim().toUpperCase();
+
+      if (profileCountry) {
+        if (isMounted) {
+          setCountry(profileCountry);
+        }
+
+        return;
+      }
+
+      const detectedCountry =
+        await getUserCountryCode();
+
+      if (isMounted) {
+        setCountry(
+          detectedCountry?.trim().toUpperCase() ||
+            undefined,
+        );
+      }
+    };
+
+    resolveCountry();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.profile?.country]);
 
   const loadTalents = useCallback(
     async (
@@ -51,6 +96,8 @@ export default function PublicTalentList({
         const data = await getPublicTalents(
           pageNumber,
           search,
+          country,
+          category
         );
 
         if (pageNumber === 1) {
@@ -63,6 +110,7 @@ export default function PublicTalentList({
         }
 
         setPage(data.current_page);
+
         setHasNextPage(
           data.links.next_page !== null,
         );
@@ -74,53 +122,41 @@ export default function PublicTalentList({
         setIsLoadingMore(false);
       }
     },
-    [search],
+    [search, country, category],
   );
 
   /*
-   * Load again whenever the search changes.
-   * Search always starts from page 1.
+   * Reload when search or country changes.
+   *
+   * We intentionally use only ONE effect here.
+   * Your previous version had two effects that
+   * could both request page 1.
    */
   useEffect(() => {
+    setPage(1);
+    setHasNextPage(true);
+    setTalents([]);
+
     loadTalents(1);
   }, [loadTalents]);
 
-  useEffect(() => {
-  setPage(1);
-  setHasNextPage(true);
-  setTalents([]);
-
-  loadTalents(1);
-}, [search]);
   const handleRefresh = () => {
     loadTalents(1, true);
   };
 
-//   const handleLoadMore = () => {
-//     if (
-//       isLoading ||
-//       isRefreshing ||
-//       isLoadingMore ||
-//       !hasNextPage
-//     ) {
-//       return;
-//     }
+  const handleLoadMore = () => {
+    if (
+      isLoading ||
+      isRefreshing ||
+      isLoadingMore ||
+      !hasNextPage
+    ) {
+      return;
+    }
 
-//     loadTalents(page + 1);
-//   };
+    loadTalents(page + 1);
+  };
 
-const handleLoadMore = () => {
-  if (
-    isLoading ||
-    isRefreshing ||
-    isLoadingMore ||
-    !hasNextPage
-  ) {
-    return;
-  }
-
-  loadTalents(page + 1);
-};
   if (isLoading) {
     return (
       <View style={styles.center}>

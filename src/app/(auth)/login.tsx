@@ -1,4 +1,4 @@
-import { View, Text , StyleSheet, TouchableOpacity} from 'react-native'
+import { View, Text , StyleSheet, TouchableOpacity, Pressable} from 'react-native'
 import React, { useLayoutEffect } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { AuthHeader } from '@/features/auth/AuthHeader'
@@ -9,32 +9,33 @@ import { Mycolors } from '@/constants/mycolors'
 
 export default function LoginScreen() {
     const navigation=useNavigation()
-    useLayoutEffect(()=>{
-        navigation.setOptions({
-            title:"",
-             headerShown: true,
-             
-             headerLeft:()=>(
-                <View style={styles.topheader}>
-                  <TouchableOpacity  
-          // onPress={() => navigation.goBack()} 
-          onPress={()=> router.push('/(tabs)')}
-          style={[{ paddingHorizontal: 10, }]}
-        >
-          <Ionicons name="arrow-back" size={24} color="#007AFF" />
-        </TouchableOpacity>
-                </View>
-             ),
-        //      headerRight:()=>(
-        //         <TouchableOpacity 
-        //   onPress={() => navigation.goBack()} 
-        //   style={{ paddingHorizontal: 10,backgroundColor:Mycolors.primarycolor }}
-        // >
-        //   <Ionicons name="arrow-back" size={24} color="#007AFF" />
-        // </TouchableOpacity>
-        //      )
-        })
-    })
+    useLayoutEffect(() => {
+  navigation.setOptions({
+    headerShown: true,
+    headerTitle: "",
+    headerStyle: {
+      backgroundColor: Mycolors.primarycolor,
+    },
+    headerLeft: () => (
+      <Pressable
+        onPress={() => router.push("/")}
+        style={{
+          marginLeft: 10,
+          padding: 8,
+        }}
+      >
+        <Ionicons
+          name="arrow-back"
+          size={24}
+          color="white"
+        />
+      </Pressable>
+    ),
+    headerRight:()=>(
+      <Text style={[,{color:Mycolors.whitecolor}]}>Login</Text>
+    )
+  });
+}, [navigation]);
   return (
    <SafeAreaView style={styles.safeArea}>
     <View style={styles.container}>
@@ -42,6 +43,7 @@ export default function LoginScreen() {
          <AuthHeader
         title='Welcome back'
         subtitle='Login to your PJ1 GIGBASE account'
+        newstyles={{color:Mycolors.blackcolor}}
         />
    
        
@@ -62,7 +64,7 @@ const styles = StyleSheet.create({
     container:{
         flex:1,
         paddingHorizontal:24,
-        paddingTop:40,
+        // paddingTop:40,
         //  backgroundColor:Mycolors.whitecolor
     },
     topheader:{

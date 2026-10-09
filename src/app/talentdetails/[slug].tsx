@@ -3,53 +3,46 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  Dimensions,
   Image,
   Linking,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-  Dimensions,
-  Pressable,
 } from 'react-native';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { LinearGradient } from 'expo-linear-gradient';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { PublicTalent } from '@/types/Talent';
 import { getPublicTalentBySlug } from '@/services/talent.service';
 import { getApiErrorMessage } from '@/services/api.error';
 import { Mycolors } from '@/constants/mycolors';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/store/auth.store';
 import { createConversation } from '@/services/chat.service';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import TalentReviewSection from '@/features/reviews/TalentReviewSection';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const GALLERY_HEIGHT = 340;
 
-// Shown/dialed when a talent hasn't listed their own number yet, so the
-// "Call" action always does something useful instead of disappearing.
-// TODO: move to a config/env value once the business line is finalized.
+const GALLERY_HEIGHT = 380;
+
 const FALLBACK_PHONE = '+233543461813';
 
-// Placeholder copy until the API exposes a real description field.
-// TODO: once available, replace every use of HARDCODED_DESCRIPTION below
-// with `talent.description` (or whatever the field ends up being named),
-// and delete this constant.
 const HARDCODED_DESCRIPTION =
   'A versatile performer known for bringing energy, professionalism, ' +
   'and a personal touch to every event — from intimate gatherings to ' +
   'large-scale productions.';
 
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
-// Kept outside the screen component so they don't get redefined (and their
-// internal state / player instances reset) on every parent re-render.
+/* -------------------------------------------------------------------------- */
+/* VIDEO                                                                      */
+/* -------------------------------------------------------------------------- */
 
 function TalentVideo({ videoUrl }: { videoUrl: string }) {
   const player = useVideoPlayer(videoUrl, (p) => {
@@ -68,114 +61,94 @@ function TalentVideo({ videoUrl }: { videoUrl: string }) {
   );
 }
 
-function AvailabilityBadge({ isAvailable }: { isAvailable: boolean }) {
+/* -------------------------------------------------------------------------- */
+/* AVAILABILITY                                                               */
+/* -------------------------------------------------------------------------- */
+
+function AvailabilityBadge({
+  isAvailable,
+}: {
+  isAvailable: boolean;
+}) {
   return (
     <View
       style={[
-        styles.badge,
-        isAvailable ? styles.badgeAvailable : styles.badgeUnavailable,
+        styles.availabilityBadge,
+        isAvailable
+          ? styles.availabilityAvailable
+          : styles.availabilityUnavailable,
       ]}
     >
       <View
         style={[
-          styles.badgeDot,
-          { backgroundColor: isAvailable ? '#22C55E' : '#9CA3AF' },
+          styles.availabilityDot,
+          {
+            backgroundColor: isAvailable
+              ? Mycolors.greencolor
+              : Mycolors.graycolor,
+          },
         ]}
       />
+
       <Text
         style={[
-          styles.badgeText,
-          { color: isAvailable ? '#16A34A' : '#6B7280' },
+          styles.availabilityText,
+          {
+            color: isAvailable
+              ? Mycolors.greencolor
+              : '#6B7280',
+          },
         ]}
       >
-        {isAvailable ? 'Available now' : 'Unavailable'}
+        {isAvailable ? 'Available' : 'Unavailable'}
       </Text>
     </View>
   );
 }
 
-// Bouncing "swipe" arrow: nudges a few pixels left and right, in a loop,
-// to signal there's more to scroll to. Motion catches the eye far more
-// reliably on a first glance than a static badge or dot indicator does —
-// this disappears permanently the moment the user actually scrolls.
-function SwipeArrowHint({ visible }: { visible: boolean }) {
-  const translateX = useRef(new Animated.Value(0)).current;
-  const opacity = useRef(new Animated.Value(1)).current;
-  const loopRef = useRef<Animated.CompositeAnimation | null>(null);
-
-  useEffect(() => {
-    loopRef.current = Animated.loop(
-      Animated.sequence([
-        Animated.timing(translateX, {
-          toValue: 8,
-          duration: 550,
-          useNativeDriver: true,
-        }),
-        Animated.timing(translateX, {
-          toValue: 0,
-          duration: 550,
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-    loopRef.current.start();
-
-    return () => loopRef.current?.stop();
-  }, [translateX]);
-
-  useEffect(() => {
-    if (!visible) {
-      Animated.timing(opacity, {
-        toValue: 0,
-        duration: 250,
-        useNativeDriver: true,
-      }).start(() => loopRef.current?.stop());
-    }
-  }, [visible, opacity]);
-
-  return (
-    <Animated.View
-      style={[
-        styles.swipeHint,
-        { opacity, transform: [{ translateX }] },
-      ]}
-      pointerEvents="none"
-    >
-      <Text style={styles.swipeHintArrow}>›</Text>
-    </Animated.View>
-  );
-}
+/* -------------------------------------------------------------------------- */
+/* GALLERY                                                                    */
+/* -------------------------------------------------------------------------- */
 
 function Gallery({
   images,
   fallbackUri,
 }: {
-  images: { id: string | number; image_url: string | null }[];
+  images: {
+    id: string | number;
+    image_url: string | null;
+  }[];
   fallbackUri: string | null;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
+
   const hasImages = images.length > 0;
   const isMultiImage = images.length > 1;
 
-  // Tracks whether the user has interacted yet, so the arrow hint and
-  // "Swipe" caption disappear permanently after the first scroll.
-  const [hasScrolled, setHasScrolled] = useState(false);
-
-  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+  const onScroll = (
+    event: NativeSyntheticEvent<NativeScrollEvent>,
+  ) => {
     const index = Math.round(
-      e.nativeEvent.contentOffset.x / SCREEN_WIDTH,
+      event.nativeEvent.contentOffset.x / SCREEN_WIDTH,
     );
-    if (index !== activeIndex) setActiveIndex(index);
-  };
 
-  const onScrollBeginDrag = () => {
-    if (!hasScrolled) setHasScrolled(true);
+    if (index !== activeIndex) {
+      setActiveIndex(index);
+    }
   };
 
   if (!hasImages && !fallbackUri) {
     return (
-      <View style={[styles.gallerySection, styles.noImage]}>
-        <Text style={styles.noImageText}>No image available</Text>
+      <View style={styles.galleryEmpty}>
+        <Ionicons
+          name="image-outline"
+          size={50}
+          color={Mycolors.graycolor}
+        />
+
+        <Text style={styles.galleryEmptyText}>
+          No image available
+        </Text>
       </View>
     );
   }
@@ -183,85 +156,104 @@ function Gallery({
   const singleImage = !hasImages && fallbackUri;
 
   return (
-    <View style={styles.gallerySection}>
+    <View style={styles.gallery}>
       {singleImage ? (
-        <Image source={{ uri: fallbackUri! }} style={styles.galleryImage} />
+        <Image
+          source={{ uri: fallbackUri! }}
+          style={styles.galleryImage}
+        />
       ) : (
-        <>
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            decelerationRate="fast"
-            onScroll={onScroll}
-            onScrollBeginDrag={onScrollBeginDrag}
-            scrollEventThrottle={16}
-          >
-            {images.map((image) => (
-              <Image
-                key={image.id}
-                source={{ uri: image.image_url! }}
-                style={styles.galleryImage}
-              />
-            ))}
-          </ScrollView>
-
-          {isMultiImage ? (
-            <View style={styles.pagination} pointerEvents="none">
-              {images.map((image, i) => (
-                <View
-                  key={image.id}
-                  style={[
-                    styles.paginationDot,
-                    i === activeIndex && styles.paginationDotActive,
-                  ]}
-                />
-              ))}
-            </View>
-          ) : null}
-        </>
+        <ScrollView
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          decelerationRate="fast"
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+        >
+          {images.map((image) => (
+            <Image
+              key={image.id}
+              source={{ uri: image.image_url! }}
+              style={styles.galleryImage}
+            />
+          ))}
+        </ScrollView>
       )}
 
-      {/* Real gradient scrim: keeps the transparent header legible over
-          bright photos without a flat, obviously-fake overlay tint. Two
-          stops (top-down) so it fades out well before the midpoint and
-          never dulls the actual photo content. */}
+      {/* Dark gradient for readability */}
       <LinearGradient
-        colors={['rgba(0,0,0,0.35)', 'rgba(0,0,0,0)']}
-        locations={[0, 0.6]}
-        style={styles.galleryScrim}
+        colors={[
+          'rgba(1,4,37,0.65)',
+          'rgba(1,4,37,0.08)',
+          'rgba(1,4,37,0)',
+        ]}
+        locations={[0, 0.35, 0.75]}
+        style={styles.galleryTopGradient}
         pointerEvents="none"
       />
 
-      {/* Second, subtler gradient at the bottom so the pagination dots
-          stay readable against light-colored photos too. */}
-      {isMultiImage && (
-        <LinearGradient
-          colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.35)']}
-          locations={[0.6, 1]}
-          style={styles.galleryBottomScrim}
-          pointerEvents="none"
-        />
-      )}
+      {/* Bottom gradient */}
+      <LinearGradient
+        colors={[
+          'rgba(1,4,37,0)',
+          'rgba(1,4,37,0.55)',
+        ]}
+        style={styles.galleryBottomGradient}
+        pointerEvents="none"
+      />
 
-      {/* Counter pill — secondary confirmation of position/total. */}
+      {/* Image counter */}
       {isMultiImage && (
-        <View style={styles.imageCounter} pointerEvents="none">
+        <View style={styles.imageCounter}>
+          <Ionicons
+            name="images-outline"
+            size={15}
+            color={Mycolors.whitecolor}
+          />
+
           <Text style={styles.imageCounterText}>
-            {activeIndex + 1}/{images.length}
+            {activeIndex + 1} / {images.length}
           </Text>
         </View>
       )}
 
-      {/* Primary "you can scroll" signal — a bouncing arrow, only shown
-          before the first interaction and only when there's more than
-          one image to scroll to. */}
-      {isMultiImage && !hasScrolled && (
-        <SwipeArrowHint visible={!hasScrolled} />
+      {/* Swipe hint */}
+      {isMultiImage && (
+        <View style={styles.swipeHint}>
+          <Ionicons
+            name="chevron-forward"
+            size={18}
+            color={Mycolors.whitecolor}
+          />
+          <Text style={styles.swipeHintText}>
+            Swipe
+          </Text>
+        </View>
+      )}
+
+      {/* Pagination */}
+      {isMultiImage && (
+        <View style={styles.pagination}>
+          {images.map((image, index) => (
+            <View
+              key={image.id}
+              style={[
+                styles.paginationDot,
+                index === activeIndex &&
+                  styles.paginationDotActive,
+              ]}
+            />
+          ))}
+        </View>
       )}
     </View>
   );
 }
+
+/* -------------------------------------------------------------------------- */
+/* PRICE CARD                                                                 */
+/* -------------------------------------------------------------------------- */
 
 function RateCard({
   currency,
@@ -274,378 +266,792 @@ function RateCard({
 }) {
   return (
     <View style={styles.rateCard}>
-      <View style={styles.rateItem}>
-        <Text style={styles.rateLabel}>HOURLY RATE</Text>
-        <Text style={styles.rateValue}>
-          {currency} {hourlyRate}
-          <Text style={styles.rateSuffix}> /hr</Text>
-        </Text>
+      <View style={styles.rateHeader}>
+        <View>
+          <Text style={styles.rateSmallLabel}>
+            TALENT RATES
+          </Text>
+
+          <Text style={styles.rateHeaderTitle}>
+            Professional pricing
+          </Text>
+        </View>
+
+        <View style={styles.priceIcon}>
+          <Ionicons
+            name="pricetag-outline"
+            size={19}
+            color={Mycolors.secondarycolor}
+          />
+        </View>
       </View>
 
-      <View style={styles.rateDivider} />
+      <View style={styles.rateContent}>
+        <View style={styles.rateItem}>
+          <Text style={styles.rateLabel}>
+            HOURLY
+          </Text>
 
-      <View style={styles.rateItem}>
-        <Text style={styles.rateLabel}>FIXED RATE</Text>
-        <Text style={styles.rateValue}>
-          {currency} {fixedRate}
+          <Text style={styles.rateValue}>
+            {currency} {hourlyRate}
+          </Text>
+
+          <Text style={styles.rateSuffix}>
+            per hour
+          </Text>
+        </View>
+
+        <View style={styles.rateDivider} />
+
+        <View style={styles.rateItem}>
+          <Text style={styles.rateLabel}>
+            FIXED
+          </Text>
+
+          <Text style={styles.rateValue}>
+            {currency} {fixedRate}
+          </Text>
+
+          <Text style={styles.rateSuffix}>
+            per project
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* INFO ROW                                                                   */
+/* -------------------------------------------------------------------------- */
+
+function InfoItem({
+  icon,
+  label,
+  value,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  value: string;
+}) {
+  return (
+    <View style={styles.infoItem}>
+      <View style={styles.infoIcon}>
+        <Ionicons
+          name={icon}
+          size={18}
+          color={Mycolors.primarycolor}
+        />
+      </View>
+
+      <View style={styles.infoTextContainer}>
+        <Text style={styles.infoLabel}>
+          {label}
+        </Text>
+
+        <Text style={styles.infoValue} numberOfLines={2}>
+          {value}
         </Text>
       </View>
     </View>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Screen
-// ---------------------------------------------------------------------------
+/* -------------------------------------------------------------------------- */
+/* SCREEN                                                                     */
+/* -------------------------------------------------------------------------- */
 
 export default function TalentDetailsScreen() {
-  const { slug } = useLocalSearchParams<{ slug: string }>();
+  const { slug } =
+    useLocalSearchParams<{ slug: string }>();
+
   const navigation = useNavigation();
- 
-  
+  const insets = useSafeAreaInsets();
+
+  const [talent, setTalent] =
+    useState<PublicTalent | null>(null);
+
+  const [loading, setLoading] = useState(true);
+
+  const [error, setError] =
+    useState<string | null>(null);
+
+  const fadeAnim =
+    useRef(new Animated.Value(0)).current;
+
+  const user = useAuthStore(
+    (state) => state.user,
+  );
+
+  const isOwnTalent =
+    user?.id === talent?.user_id;
+
   useLayoutEffect(() => {
     navigation.setOptions({
-      // title: talent?.stage_name ?? 'Talent Details',
-       title: "",
+      title: '',
       headerTransparent: true,
+      headerShown: true,
       headerTintColor: Mycolors.whitecolor,
-      headerShown:true,
+
       headerLeft: () => (
         <TouchableOpacity
-          style={styles.headerBookButton}
-          activeOpacity={0.85}
-          onPress={()=> navigation.goBack()}
+          style={styles.headerButton}
+          activeOpacity={0.8}
+          onPress={() => navigation.goBack()}
         >
-           <Ionicons name="arrow-back" size={24} color="#007AFF" />
+          <Ionicons
+            name="arrow-back"
+            size={22}
+            color={Mycolors.whitecolor}
+          />
         </TouchableOpacity>
       ),
-      //  headerLfet: () => (
-      //   <TouchableOpacity
-      //     style={styles.headerBookButton}
-      //     activeOpacity={0.85}
-      //   >
-      //     <Text style={styles.headerBookButtonText}>Book</Text>
-      //   </TouchableOpacity>
-      // ),
+
+      headerRight: () => (
+        <TouchableOpacity
+          style={styles.headerButton}
+          activeOpacity={0.8}
+          onPress={() => {
+            if (!talent) return;
+
+            router.push({
+              pathname: '/booking/[talentId]',
+              params: {
+                talentId: talent.slug,
+              },
+            });
+          }}
+        >
+          <Ionicons
+            name="calendar-outline"
+            size={21}
+            color={Mycolors.whitecolor}
+          />
+        </TouchableOpacity>
+      ),
     });
-    // `talent` is intentionally the only reactive dependency besides
-    // `navigation` — headerRight's onPress is wired up separately below
-    // once booking is implemented, so it doesn't need to be in this array.
-  }, [navigation]);
+  }, [navigation, talent]);
 
+  const loadTalent = async () => {
+    if (!slug) return;
 
-  const [talent, setTalent] = useState<PublicTalent | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+    try {
+      setLoading(true);
+      setError(null);
 
- 
+      const data =
+        await getPublicTalentBySlug(slug);
 
-
- const user = useAuthStore(
-  (state) => state.user
-);
-
-// const isAuthenticated = useAuthStore(
-//   (state) => state.isAuthenticated,
-// );
-
-// const isLoading = useAuthStore(
-//   (state) => state.isLoading,
-// );
-
-
-
-  const isOwnTalent= user?.id ===talent?.user_id
-  // Fade the whole screen in once data lands — feels intentional rather
-  // than a hard content pop after the spinner disappears.
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  const insets = useSafeAreaInsets()
-  const actionleft =12
+      setTalent(data);
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-   
-    const loadTalent = async () => {
-      if (!slug) return;
-
-      try {
-        setLoading(true);
-        setError(null);
-
-        const data = await getPublicTalentBySlug(slug);
-        setTalent(data);
-      } catch (err) {
-        setError(getApiErrorMessage(err));
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadTalent();
   }, [slug]);
 
   useEffect(() => {
-    if (talent) {
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 350,
-        useNativeDriver: true,
-      }).start();
-    }
+    if (!talent) return;
+
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 400,
+      useNativeDriver: true,
+    }).start();
   }, [talent, fadeAnim]);
+
+  /* ---------------------------------------------------------------------- */
+  /* LOADING                                                                 */
+  /* ---------------------------------------------------------------------- */
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={Mycolors.primarycolor} />
-      </View>
-    );
-  }
+      <View style={styles.loadingScreen}>
+        <View style={styles.loadingLogo}>
+          <Text style={styles.loadingLogoText}>
+            PJ1
+          </Text>
+        </View>
 
-  if (error || !talent) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.errorTitle}>Something went wrong</Text>
-        <Text style={styles.errorText}>
-          {error ?? 'Talent not found.'}
+        <ActivityIndicator
+          size="small"
+          color={Mycolors.secondarycolor}
+        />
+
+        <Text style={styles.loadingText}>
+          Loading talent profile...
         </Text>
       </View>
     );
   }
 
-  const images = talent.gallery_images.filter((image) => !!image.image_url);
-  const videos = talent.video_details.filter((video) => !!video.video_url);
-  const phoneNumber = talent.userprofile.phone_number?.trim();
-  const profilePicture = talent.userprofile.profile_picture;
-  const location = [talent.userprofile.city, talent.userprofile.country]
+  /* ---------------------------------------------------------------------- */
+  /* ERROR                                                                   */
+  /* ---------------------------------------------------------------------- */
+
+  if (error || !talent) {
+    return (
+      <View style={styles.errorScreen}>
+        <View style={styles.errorIcon}>
+          <Ionicons
+            name="alert-circle-outline"
+            size={42}
+            color={Mycolors.redcolor}
+          />
+        </View>
+
+        <Text style={styles.errorTitle}>
+          Talent unavailable
+        </Text>
+
+        <Text style={styles.errorMessage}>
+          {error ?? 'Talent not found.'}
+        </Text>
+
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={loadTalent}
+        >
+          <Ionicons
+            name="refresh-outline"
+            size={18}
+            color={Mycolors.whitecolor}
+          />
+
+          <Text style={styles.retryText}>
+            Try Again
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  /* ---------------------------------------------------------------------- */
+  /* DATA                                                                    */
+  /* ---------------------------------------------------------------------- */
+
+  const images =
+    talent.gallery_images.filter(
+      (image) => !!image.image_url,
+    );
+
+  const videos =
+    talent.video_details.filter(
+      (video) => !!video.video_url,
+    );
+
+  const phoneNumber =
+    talent.userprofile.phone_number?.trim();
+
+  const profilePicture =
+    talent.userprofile.profile_picture;
+
+  const location = [
+    talent.userprofile.city,
+    talent.userprofile.country,
+  ]
     .filter(Boolean)
     .join(', ');
 
-  // Always resolves to something dialable — the talent's own number when
-  // they have one, otherwise the platform fallback line.
-  const callablePhone = phoneNumber || FALLBACK_PHONE;
+  const callablePhone =
+    phoneNumber || FALLBACK_PHONE;
+
+  /* ---------------------------------------------------------------------- */
+  /* CALL                                                                    */
+  /* ---------------------------------------------------------------------- */
 
   const handleCall = async (number: string) => {
     try {
       await Linking.openURL(`tel:${number}`);
     } catch {
-      Alert.alert('Unable to Call', 'This device cannot make phone calls.');
+      Alert.alert(
+        'Unable to Call',
+        'This device cannot make phone calls.',
+      );
     }
   };
 
-const handleChat = async () => {
-  if (isOwnTalent) {
-    return;
-  }
- 
+  /* ---------------------------------------------------------------------- */
+  /* CHAT                                                                    */
+  /* ---------------------------------------------------------------------- */
 
-  if (!user) {
-    router.push('/(auth)/login');
-    return;
-  }
+  const handleChat = async () => {
+    if (isOwnTalent) return;
 
-  try {
-    const conversation = await createConversation(talent.id);
+    if (!user) {
+      router.push('/(auth)/login');
+      return;
+    }
 
+    try {
+      const conversation =
+        await createConversation(talent.id);
+
+      router.push({
+        pathname: '/chat/[conversationId]',
+        params: {
+          conversationId: conversation.id,
+        },
+      });
+    } catch (error) {
+      console.log(
+        'Unable to start conversation:',
+        error,
+      );
+    }
+  };
+
+  /* ---------------------------------------------------------------------- */
+  /* BOOK                                                                    */
+  /* ---------------------------------------------------------------------- */
+
+  const handleBook = () => {
     router.push({
-      pathname: '/chat/[conversationId]',
+      pathname: '/booking/[talentId]',
       params: {
-        conversationId: conversation.id,
+        talentId: talent.slug,
       },
     });
-  } catch (error) {
-    console.log(
-      'Unable to start conversation:',
-      error,
-    );
-  }
-};
+  };
 
-
-const handleBook = () => {
-  if (!talent) return;
-
-  router.push({
-    pathname: '/booking/[talentId]',
-    params: {
-      talentId: talent.slug,
-      // slug:talent.slug
-    },
-  });
-};
+  /* ---------------------------------------------------------------------- */
+  /* UI                                                                      */
+  /* ---------------------------------------------------------------------- */
 
   return (
-    <Animated.ScrollView
-      style={[styles.container, { opacity: fadeAnim }]}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      <Gallery images={images} fallbackUri={profilePicture ?? null} />
+    <View style={styles.screen}>
+      <Animated.ScrollView
+        style={{
+          opacity: fadeAnim,
+        }}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingBottom: isOwnTalent
+            ? 30
+            : 125 + insets.bottom,
+        }}
+      >
+        {/* HERO */}
+        <Gallery
+          images={images}
+          fallbackUri={profilePicture ?? null}
+        />
 
-      {/* Identity card overlaps the gallery bottom edge for a layered,
-          "profile" feel instead of a flat stack of sections. */}
-      <View style={styles.identityCard}>
-        <View style={styles.nameRow}>
-          <Text style={styles.stageName} numberOfLines={2}>
-            {talent.stage_name}
-          </Text>
-        </View>
+        {/* IDENTITY */}
+        <View style={styles.identityCard}>
+          {/* Username */}
+          <View style={styles.usernameRow}>
+            <View style={styles.usernameIcon}>
+              <Ionicons
+                name="person"
+                size={12}
+                color={Mycolors.primarycolor}
+              />
+            </View>
 
-        <Text style={styles.title}>{talent.title}</Text>
-
-        <View style={styles.metaRow}>
-          <View style={styles.ratingPill}>
-            <Text style={styles.ratingStar}>★</Text>
-            <Text style={styles.ratingValue}>{talent.rating}</Text>
+            <Text style={styles.username}>
+              @{talent.user_details.username}
+            </Text>
           </View>
 
-          <Text style={styles.bookings}>
-            {talent.total_bookings} bookings
+          {/* Stage name */}
+          <Text
+            style={styles.stageName}
+            numberOfLines={2}
+          >
+            {talent.stage_name}
           </Text>
 
-          <AvailabilityBadge isAvailable={talent.is_available} />
-        </View>
-      </View>
-
-      <RateCard
-        currency={talent.currency}
-        hourlyRate={talent.hourly_rate}
-        fixedRate={talent.fixed_rate}
-      />
-
-      {location ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Location</Text>
-          <Text style={styles.bodyText}>{location}</Text>
-        </View>
-      ) : null}
-
-      {talent.userprofile.bio ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About</Text>
-          <Text style={styles.bodyText}>{talent.userprofile.bio}</Text>
-        </View>
-      ) : null}
-
-      {/* Hardcoded for now — see HARDCODED_DESCRIPTION above for the swap
-          point once the API returns a real description field. Kept as
-          its own section (separate from "About", which maps to the
-          profile bio) since the two may end up being distinct fields. */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Description</Text>
-        <Text style={styles.bodyText}>{HARDCODED_DESCRIPTION}</Text>
-      </View>
-
-      {videos.length > 0 ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>GIGBASE Videos</Text>
-          {videos.map((video) => (
-            <TalentVideo key={video.id} videoUrl={video.video_url!} />
-          ))}
-        </View>
-      ) : null}
-
-      {/* Spacer so content doesn't sit flush under the sticky action bar */}
-      <View style={{ height: 90 +12}} />
-
-      
-        {!isOwnTalent &&(
-          <>
-          <View style={[styles.actions,{marginBottom:insets.bottom+12}]}>
-        <TouchableOpacity
-          style={styles.callButton}
-          onPress={() => handleCall(callablePhone)}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.callButtonText} numberOfLines={1}>
-            {phoneNumber ? 'Call' : callablePhone} 
+          {/* Profession */}
+          <Text style={styles.title}>
+            {talent.title}
           </Text>
-        </TouchableOpacity>
-          <TouchableOpacity
-          style={styles.chatButton}
-          onPress={handleChat}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.chatButtonText}>Chat </Text>
-        </TouchableOpacity>
 
-         
-         </View>
+          {/* Availability */}
+          <View style={styles.availabilityRow}>
+            <AvailabilityBadge
+              isAvailable={talent.is_available}
+            />
+          </View>
 
-         <View style={styles.bookingview_btn}>
-         <TouchableOpacity
-          style={styles.chatButton}
-         onPress={handleBook}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.chatButtonText}> Book Talent </Text>
-        </TouchableOpacity>
+          {/* Stats */}
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <View style={styles.statIcon}>
+                <Ionicons
+                  name="star"
+                  size={16}
+                  color={Mycolors.secondarycolor}
+                />
+              </View>
+
+              <View>
+                <Text style={styles.statValue}>
+                  {talent.review_count ??
+                    talent.reviews?.length ??
+                    0}
+                </Text>
+
+                <Text style={styles.statLabel}>
+                  Reviews
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.statDivider} />
+
+            <View style={styles.statItem}>
+              <View style={styles.statIcon}>
+                <Ionicons
+                  name="briefcase-outline"
+                  size={16}
+                  color={Mycolors.secondarycolor}
+                />
+              </View>
+
+              <View>
+                <Text style={styles.statValue}>
+                  {talent.total_bookings}
+                </Text>
+
+                <Text style={styles.statLabel}>
+                  Bookings
+                </Text>
+              </View>
+            </View>
+          </View>
         </View>
-         
 
-         </>
-        )}
+        {/* LOCATION */}
+        {location ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionEyebrow}>
+              PROFILE
+            </Text>
 
-        
+            <Text style={styles.sectionTitle}>
+              About this talent
+            </Text>
 
-        
-     
-    </Animated.ScrollView>
+            <View style={styles.infoCard}>
+              <InfoItem
+                icon="location-outline"
+                label="Based in"
+                value={location}
+              />
+            </View>
+          </View>
+        ) : null}
+
+        {/* BIO */}
+        {talent.userprofile.bio ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              About
+            </Text>
+
+            <View style={styles.textCard}>
+              <Text style={styles.bodyText}>
+                {talent.userprofile.bio}
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
+        {/* RATES */}
+        <View style={styles.section}>
+          <RateCard
+            currency={talent.currency}
+            hourlyRate={talent.hourly_rate}
+            fixedRate={talent.fixed_rate}
+          />
+        </View>
+
+        {/* SKILLS */}
+        {talent.skills?.length > 0 ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionEyebrow}>
+              EXPERTISE
+            </Text>
+
+            <Text style={styles.sectionTitle}>
+              Skills & services
+            </Text>
+
+            <View style={styles.skillsContainer}>
+              {talent.skills.map((item) => (
+                <View
+                  key={item.id}
+                  style={styles.skillBadge}
+                >
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={15}
+                    color={Mycolors.greencolor}
+                  />
+
+                  <Text style={styles.skillText}>
+                    {item.skill.name}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        ) : null}
+
+        {/* DESCRIPTION */}
+        <View style={styles.section}>
+          <Text style={styles.sectionEyebrow}>
+            DETAILS
+          </Text>
+
+          <Text style={styles.sectionTitle}>
+            Description
+          </Text>
+
+          <View style={styles.textCard}>
+            <Text style={styles.bodyText}>
+              {HARDCODED_DESCRIPTION}
+            </Text>
+          </View>
+        </View>
+
+        {/* VIDEOS */}
+        {videos.length > 0 ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionEyebrow}>
+              SHOWCASE
+            </Text>
+
+            <Text style={styles.sectionTitle}>
+              GIGBASE Videos
+            </Text>
+
+            {videos.map((video) => (
+              <TalentVideo
+                key={video.id}
+                videoUrl={video.video_url!}
+              />
+            ))}
+          </View>
+        ) : null}
+
+        {/* REVIEWS */}
+        <View style={styles.reviewSection}>
+          <TalentReviewSection
+            talentId={talent.id}
+            reviews={talent.reviews ?? []}
+            reviewCount={talent.review_count ?? 0}
+            isAuthenticated={!!user}
+            onReviewSubmitted={loadTalent}
+          />
+        </View>
+      </Animated.ScrollView>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* BOTTOM ACTION BAR                                                  */}
+      {/* ------------------------------------------------------------------ */}
+
+      {!isOwnTalent && (
+        <View
+          style={[
+            styles.bottomBar,
+            {
+              paddingBottom:
+                Math.max(insets.bottom, 10) + 8,
+            },
+          ]}
+        >
+          <View style={styles.actionRow}>
+            {/* CALL */}
+            <Pressable
+              style={({ pressed }) => [
+                styles.secondaryAction,
+                pressed && styles.actionPressed,
+              ]}
+              onPress={() =>
+                handleCall(callablePhone)
+              }
+            >
+              <Ionicons
+                name="call-outline"
+                size={21}
+                color={Mycolors.primarycolor}
+              />
+
+              <Text style={styles.secondaryActionText}>
+                Call
+              </Text>
+            </Pressable>
+
+            {/* CHAT */}
+            <Pressable
+              style={({ pressed }) => [
+                styles.secondaryAction,
+                pressed && styles.actionPressed,
+              ]}
+              onPress={handleChat}
+            >
+              <Ionicons
+                name="chatbubble-ellipses-outline"
+                size={21}
+                color={Mycolors.primarycolor}
+              />
+
+              <Text style={styles.secondaryActionText}>
+                Chat
+              </Text>
+            </Pressable>
+
+            {/* BOOK */}
+            <Pressable
+              style={({ pressed }) => [
+                styles.bookAction,
+                pressed && styles.actionPressed,
+              ]}
+              onPress={handleBook}
+            >
+              <Ionicons
+                name="calendar-outline"
+                size={21}
+                color={Mycolors.primarycolor}
+              />
+
+              <Text style={styles.bookActionText}>
+                Book Talent
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
+    </View>
   );
 }
 
+/* ========================================================================== */
+/* STYLES                                                                     */
+/* ========================================================================== */
+
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
     backgroundColor: Mycolors.whitecolor,
-    marginTop:70
   },
 
-  content: {
-    paddingBottom: 24,
-  },
+  /* ---------------------------------------------------------------------- */
+  /* LOADING                                                                 */
+  /* ---------------------------------------------------------------------- */
 
-  center: {
+  loadingScreen: {
     flex: 1,
+    backgroundColor: Mycolors.primarycolor,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
-    gap: 6,
+    padding: 30,
+  },
+
+  loadingLogo: {
+    width: 72,
+    height: 72,
+    borderRadius: 22,
+    backgroundColor: Mycolors.secondarycolor,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 22,
+  },
+
+  loadingLogoText: {
+    color: Mycolors.primarycolor,
+    fontSize: 22,
+    fontWeight: '900',
+  },
+
+  loadingText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 13,
+    marginTop: 12,
+  },
+
+  /* ---------------------------------------------------------------------- */
+  /* ERROR                                                                   */
+  /* ---------------------------------------------------------------------- */
+
+  errorScreen: {
+    flex: 1,
+    backgroundColor: Mycolors.whitecolor,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 30,
+  },
+
+  errorIcon: {
+    width: 78,
+    height: 78,
+    borderRadius: 39,
+    backgroundColor: '#FFF2F2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 18,
   },
 
   errorTitle: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: 21,
+    fontWeight: '800',
+    color: Mycolors.primarycolor,
+    marginBottom: 8,
   },
 
-  errorText: {
+  errorMessage: {
     textAlign: 'center',
-    fontSize: 14,
     color: '#6B7280',
+    fontSize: 14,
+    lineHeight: 21,
+    marginBottom: 22,
   },
 
-  // --- Header --------------------------------------------------------
-
-  headerBookButton: {
+  retryButton: {
+    height: 48,
+    paddingHorizontal: 24,
+    borderRadius: 12,
     backgroundColor: Mycolors.primarycolor,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
 
-  headerBookButtonText: {
+  retryText: {
     color: Mycolors.whitecolor,
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
   },
 
-  // --- Gallery ---------------------------------------------------------
+  /* ---------------------------------------------------------------------- */
+  /* HEADER                                                                  */
+  /* ---------------------------------------------------------------------- */
 
-  gallerySection: {
+  headerButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: 'rgba(1,4,37,0.72)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 6,
+  },
+
+  /* ---------------------------------------------------------------------- */
+  /* GALLERY                                                                 */
+  /* ---------------------------------------------------------------------- */
+
+  gallery: {
     width: '100%',
     height: GALLERY_HEIGHT,
-    backgroundColor: '#F1F1F3',
+    backgroundColor: '#E5E7EB',
   },
 
   galleryImage: {
@@ -654,196 +1060,362 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
   },
 
-  galleryScrim: {
+  galleryTopGradient: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: 130,
+    height: 170,
   },
 
-  galleryBottomScrim: {
+  galleryBottomGradient: {
     position: 'absolute',
-    bottom: 0,
     left: 0,
     right: 0,
-    height: 70,
+    bottom: 0,
+    height: 120,
+  },
+
+  galleryEmpty: {
+    height: GALLERY_HEIGHT,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  galleryEmptyText: {
+    marginTop: 10,
+    fontSize: 14,
+    color: '#9CA3AF',
+    fontWeight: '600',
+  },
+
+  imageCounter: {
+    position: 'absolute',
+    right: 16,
+    bottom: 18,
+    height: 34,
+    paddingHorizontal: 12,
+    borderRadius: 17,
+    backgroundColor: 'rgba(1,4,37,0.78)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+
+  imageCounterText: {
+    color: Mycolors.whitecolor,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+
+  swipeHint: {
+    position: 'absolute',
+    left: 16,
+    bottom: 18,
+    height: 34,
+    paddingHorizontal: 10,
+    borderRadius: 17,
+    backgroundColor: 'rgba(1,4,37,0.68)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+
+  swipeHintText: {
+    color: Mycolors.whitecolor,
+    fontSize: 11,
+    fontWeight: '700',
   },
 
   pagination: {
     position: 'absolute',
-    bottom: 14,
     left: 0,
     right: 0,
+    bottom: 7,
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 6,
+    alignItems: 'center',
+    gap: 5,
   },
 
   paginationDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    backgroundColor: 'rgba(255,255,255,0.55)',
   },
 
   paginationDotActive: {
-    width: 18,
-    backgroundColor: Mycolors.whitecolor,
+    width: 19,
+    backgroundColor: Mycolors.secondarycolor,
   },
 
-  imageCounter: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-  },
-
-  imageCounterText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Mycolors.whitecolor,
-  },
-
-  swipeHint: {
-    position: 'absolute',
-    right: 14,
-    top: '50%',
-    marginTop: -22,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  swipeHintArrow: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: Mycolors.whitecolor,
-    marginLeft: 3, // optically center the ›, which has left-side bearing
-  },
-
-  noImage: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  noImageText: {
-    fontSize: 14,
-    color: '#9CA3AF',
-  },
-
-  // --- Identity card ---------------------------------------------------
+  /* ---------------------------------------------------------------------- */
+  /* IDENTITY                                                                */
+  /* ---------------------------------------------------------------------- */
 
   identityCard: {
-    marginTop: -28,
-    marginHorizontal: 16,
-    padding: 18,
-    borderRadius: 20,
+    marginHorizontal: 15,
+    marginTop: -30,
+    borderRadius: 22,
     backgroundColor: Mycolors.whitecolor,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 20,
+
+    shadowColor: Mycolors.blackcolor,
+    shadowOffset: {
+      width: 0,
+      height: 7,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 18,
+
+    elevation: 6,
   },
 
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  stageName: {
-    flex: 1,
-    fontSize: 24,
-    fontWeight: '800',
-    letterSpacing: -0.3,
-  },
-
-  title: {
-    marginTop: 4,
-    fontSize: 15,
-    color: '#6B7280',
-  },
-
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginTop: 14,
-  },
-
-  ratingPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-  },
-
-  ratingStar: {
-    fontSize: 13,
-    color: '#D97706',
-  },
-
-  ratingValue: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#92400E',
-  },
-
-  bookings: {
-    fontSize: 13,
-    color: '#6B7280',
-  },
-
-  badge: {
+  usernameRow: {
+    alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
+    marginBottom: 8,
   },
 
-  badgeAvailable: {
-    backgroundColor: '#ECFDF5',
+  usernameIcon: {
+    width: 21,
+    height: 21,
+    borderRadius: 10.5,
+    backgroundColor: '#EEF0F8',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
-  badgeUnavailable: {
+  username: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Mycolors.primarycolor,
+  },
+
+  stageName: {
+    fontSize: 28,
+    lineHeight: 33,
+    fontWeight: '900',
+    color: Mycolors.primarycolor,
+    letterSpacing: -0.6,
+  },
+
+  title: {
+    marginTop: 5,
+    color: '#6B7280',
+    fontSize: 15,
+    lineHeight: 21,
+    fontWeight: '500',
+  },
+
+  availabilityRow: {
+    marginTop: 14,
+  },
+
+  availabilityBadge: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    borderRadius: 20,
+  },
+
+  availabilityAvailable: {
+    backgroundColor: '#EEF9F2',
+  },
+
+  availabilityUnavailable: {
     backgroundColor: '#F3F4F6',
   },
 
-  badgeDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
+  availabilityDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
 
-  badgeText: {
+  availabilityText: {
     fontSize: 12,
+    fontWeight: '800',
+  },
+
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 19,
+    paddingTop: 16,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#E5E7EB',
+  },
+
+  statItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+  },
+
+  statIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#FFF8E6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  statValue: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: Mycolors.primarycolor,
+  },
+
+  statLabel: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginTop: 1,
+  },
+
+  statDivider: {
+    width: StyleSheet.hairlineWidth,
+    height: 34,
+    backgroundColor: '#E5E7EB',
+    marginHorizontal: 8,
+  },
+
+  /* ---------------------------------------------------------------------- */
+  /* SECTIONS                                                                */
+  /* ---------------------------------------------------------------------- */
+
+  section: {
+    marginTop: 26,
+    paddingHorizontal: 17,
+  },
+
+  sectionEyebrow: {
+    color: Mycolors.secondarycolor,
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1.4,
+    marginBottom: 4,
+  },
+
+  sectionTitle: {
+    color: Mycolors.primarycolor,
+    fontSize: 20,
+    fontWeight: '900',
+    letterSpacing: -0.3,
+    marginBottom: 12,
+  },
+
+  infoCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#ECEEF2',
+    backgroundColor: '#FAFAFB',
+    padding: 15,
+  },
+
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  infoIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#EEF0F8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+
+  infoTextContainer: {
+    flex: 1,
+  },
+
+  infoLabel: {
+    fontSize: 10,
+    color: '#9CA3AF',
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginBottom: 3,
+  },
+
+  infoValue: {
+    fontSize: 14,
+    color: Mycolors.primarycolor,
     fontWeight: '700',
   },
 
-  // --- Rates -------------------------------------------------------------
+  textCard: {
+    borderRadius: 16,
+    backgroundColor: '#F8F9FB',
+    padding: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: Mycolors.secondarycolor,
+  },
+
+  bodyText: {
+    color: '#374151',
+    fontSize: 14.5,
+    lineHeight: 23,
+  },
+
+  /* ---------------------------------------------------------------------- */
+  /* RATES                                                                   */
+  /* ---------------------------------------------------------------------- */
 
   rateCard: {
-    flexDirection: 'row',
-    marginHorizontal: 16,
-    marginTop: 14,
-    padding: 18,
     borderRadius: 20,
-    backgroundColor: '#111827',
+    backgroundColor: Mycolors.primarycolor,
+    padding: 18,
+    overflow: 'hidden',
+  },
+
+  rateHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+
+  rateSmallLabel: {
+    color: Mycolors.secondarycolor,
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1.3,
+  },
+
+  rateHeaderTitle: {
+    color: Mycolors.whitecolor,
+    fontSize: 16,
+    fontWeight: '800',
+    marginTop: 4,
+  },
+
+  priceIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: 'rgba(247,185,40,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  rateContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 
   rateItem: {
@@ -852,55 +1424,68 @@ const styles = StyleSheet.create({
 
   rateDivider: {
     width: StyleSheet.hairlineWidth,
-    marginHorizontal: 16,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    height: 55,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    marginHorizontal: 15,
   },
 
   rateLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.6,
     color: 'rgba(255,255,255,0.55)',
-    marginBottom: 6,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1,
+    marginBottom: 5,
   },
 
   rateValue: {
-    fontSize: 19,
-    fontWeight: '800',
-    color: Mycolors.whitecolor,
+    color: Mycolors.secondarycolor,
+    fontSize: 20,
+    fontWeight: '900',
   },
 
   rateSuffix: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 11,
+    marginTop: 3,
   },
 
-  // --- Content sections --------------------------------------------------
+  /* ---------------------------------------------------------------------- */
+  /* SKILLS                                                                  */
+  /* ---------------------------------------------------------------------- */
 
-  section: {
-    marginTop: 24,
-    paddingHorizontal: 18,
+  skillsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
 
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: '800',
-    marginBottom: 8,
-    letterSpacing: -0.2,
+  skillBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 20,
+    backgroundColor: '#F7F9F7',
+    borderWidth: 1,
+    borderColor: '#E2EBDD',
   },
 
-  bodyText: {
-    fontSize: 14.5,
-    lineHeight: 22,
+  skillText: {
+    fontSize: 13,
+    fontWeight: '700',
     color: '#374151',
   },
 
+  /* ---------------------------------------------------------------------- */
+  /* VIDEO                                                                   */
+  /* ---------------------------------------------------------------------- */
+
   videoCard: {
-    marginTop: 12,
-    borderRadius: 16,
+    marginTop: 4,
+    borderRadius: 18,
     overflow: 'hidden',
-    backgroundColor: '#000',
+    backgroundColor: Mycolors.blackcolor,
   },
 
   video: {
@@ -908,59 +1493,104 @@ const styles = StyleSheet.create({
     aspectRatio: 16 / 9,
   },
 
-  // --- Sticky actions ------------------------------------------------------
+  /* ---------------------------------------------------------------------- */
+  /* REVIEWS                                                                 */
+  /* ---------------------------------------------------------------------- */
 
-  actions: {
+  reviewSection: {
+    marginTop: 30,
+    paddingHorizontal: 17,
+  },
+
+  /* ---------------------------------------------------------------------- */
+  /* BOTTOM ACTIONS                                                          */
+  /* ---------------------------------------------------------------------- */
+
+  bottomBar: {
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 60,
-   
+    bottom: 0,
+
+    backgroundColor: 'rgba(255,255,255,0.98)',
+
+    borderTopWidth: 1,
+    borderTopColor: '#E7E8EC',
+
+    paddingHorizontal: 14,
+    paddingTop: 10,
+
+    shadowColor: Mycolors.blackcolor,
+    shadowOffset: {
+      width: 0,
+      height: -4,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+
+    elevation: 12,
+  },
+
+  actionRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom:12,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
+    gap: 9,
+  },
+
+  secondaryAction: {
+    height: 52,
+    minWidth: 74,
+    paddingHorizontal: 12,
+
+    borderRadius: 14,
+    borderWidth: 1.3,
+    borderColor: '#D9DDE7',
+
     backgroundColor: Mycolors.whitecolor,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E5E7EB',
-  },
 
-  callButton: {
-    flex: 1,
-    height: 52,
-    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: Mycolors.primarycolor,
-    paddingHorizontal: 8,
+    flexDirection: 'row',
+    gap: 6,
   },
 
-  chatButton: {
-    flex: 1,
-    height: 52,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Mycolors.primarycolor,
-  },
-
-  callButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
+  secondaryActionText: {
     color: Mycolors.primarycolor,
+    fontSize: 13,
+    fontWeight: '800',
   },
 
-  chatButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Mycolors.whitecolor,
+  bookAction: {
+    flex: 1,
+    height: 52,
+
+    borderRadius: 14,
+
+    backgroundColor: Mycolors.secondarycolor,
+
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 7,
+
+    shadowColor: Mycolors.secondarycolor,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+
+    elevation: 4,
   },
 
-  bookingview_btn:{
-    marginTop:50,
-    marginBottom:40,
-  
-  }
+  bookActionText: {
+    color: Mycolors.primarycolor,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+
+  actionPressed: {
+    opacity: 0.75,
+    transform: [{ scale: 0.98 }],
+  },
 });

@@ -3,10 +3,11 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store'
 
 
-// const API_BASE_URL = "https://190c-154-162-62-115.ngrok-free.app"; 
+// const API_BASE_URL = "https://c7de-154-161-127-156.ngrok-free.app"; 
 
-const API_BASE_URL ='https://5de1-154-162-47-10.ngrok-free.app';
+export const API_BASE_URL ='https://web-production-50fd3.up.railway.app';
 
+export const WEBSITE_BASE_URL='https://www.pj1gigbase.com'
 
 const ACCESS_TOKEN_KEY = 'access_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';

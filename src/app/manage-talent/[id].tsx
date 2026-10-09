@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -9,144 +9,42 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
+import { useLocalSearchParams, router, useFocusEffect, useNavigation } from 'expo-router';
 
-import { getTalent, uploadGalleryImage, uploadTalentVideo } from '@/services/talent.service';
+import { deleteTalent, getTalent, updateTalent, uploadGalleryImage, uploadTalentVideo } from '@/services/talent.service';
 import { getApiErrorMessage } from '@/services/api.error';
 import { Talent} from '@/types/Talent';
 import { Mycolors } from '@/constants/mycolors';
 import * as ImagePicker from 'expo-image-picker'
 import TalentVideoSection from '@/utils/TalentVideoSection';
 import TalentPhotoSection from '@/utils/TalentPhotoSource';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import AvailabilityToggle from '@/utils/AvailabilityToggle';
 
 
 export default function ManageTalentScreen() {
+  const navigation=useNavigation()
+
+  useLayoutEffect(()=>{
+    navigation.setOptions({
+      headerShown:true,
+      title:"",
+      headerLeft:()=>(
+        <Pressable onPress={()=> router.push('/dashboard')}>
+           <Ionicons name="arrow-back" size={24} color="#007AFF" />
+        </Pressable>
+      )
+    })
+  },[navigation])
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const [talent, setTalent] = useState<Talent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAvailable, setIsAvailable] =
+  useState(true);
+const [isLoaded, setIsLoaded] = useState(false);
+ 
 
-  // upload image or pictures
-  const addPhotos = async ()=>{
-  
-    if (!talent)return
-    const currentCount = talent.gallery_images.filter(
-      (image)=>image.image_url
-    ).length;
-
-    const remainingSlots = 3 - currentCount;
-    if(remainingSlots <=0){
-      Alert.alert(
-        "Maximum reached","You can only have 3 photos on one talent."
-      )
-      return
-    }
-
-    // const permission = await ImagePicker.requestCameraPermissionsAsync
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if(!permission.granted){
-      Alert.alert(
-        'Permission required','Please allow photo library access to select photos.'
-      )
-      return
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes:['images'],
-      allowsMultipleSelection:true,
-      selectionLimit:remainingSlots,
-      quality:0.8,
-    });
-    if(result.canceled || !result.assets.length){
-      return
-    }
-
-    const selectedPhotos = result.assets.slice(
-      0,
-      remainingSlots
-    );
-    try{
-      setIsLoading(true);
-      for(const photo of selectedPhotos){
-        await uploadGalleryImage(
-          talent.id,
-          photo.uri
-        )
-      }
-      await loadTalent();
-      Alert.alert(
-        'Success',`${selectedPhotos.length > 1 ? 's':''} uploaded successfully`
-      )
-    }catch (error){
-      Alert.alert('Uploaded failed', getApiErrorMessage(error))
-      console.log("Error", getApiErrorMessage(error))
-    }finally{
-      setIsLoading(false)
-    }
-  }
-
-  // video upload
-//   const addVideo = async () => {
-//   if (!talent) return;
-
-//   const hasCloudinaryVideo = talent.videos.some(
-//     (video) => video.source === 'cloudinary'
-//   );
-
-//   if (hasCloudinaryVideo) {
-//     Alert.alert(
-//       'Video limit reached',
-//       'This talent already has a GIGBASE video.'
-//     );
-//     return;
-//   }
-
-//   const permission =
-//     await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-//   if (!permission.granted) {
-//     Alert.alert(
-//       'Permission required',
-//       'Please allow access to your media library to select a video.'
-//     );
-//     return;
-//   }
-
-//   const result =
-//     await ImagePicker.launchImageLibraryAsync({
-//       mediaTypes: ['videos'],
-//       allowsMultipleSelection: false,
-//       quality: 0.8,
-//     });
-
-//   if (result.canceled || !result.assets.length) {
-//     return;
-//   }
-
-//   const video = result.assets[0];
-
-//   try {
-//     setIsLoading(true);
-
-//     await uploadTalentVideo(
-//       talent.id,
-//       video.uri
-//     );
-
-//     await loadTalent();
-
-//     Alert.alert(
-//       'Success',
-//       'Video uploaded successfully.'
-//     );
-//   } catch (error) {
-//     Alert.alert(
-//       'Upload failed',
-//       getApiErrorMessage(error)
-//     );
-//   } finally {
-//     setIsLoading(false);
-//   }
-// };
 
   const loadTalent = async () => {
     try {
@@ -155,12 +53,53 @@ export default function ManageTalentScreen() {
       const data = await getTalent(Number(id));
 
       setTalent(data);
+       setIsAvailable(data.is_available);
     } catch (error) {
       Alert.alert('Error', getApiErrorMessage(error));
     } finally {
       setIsLoading(false);
     }
   };
+
+const handleDeleteTalent = (talentId: number) => {
+  Alert.alert(
+    'Delete Talent',
+    'Are you sure you want to delete this talent profile? This action cannot be undone.',
+    [
+      {
+        text: 'Cancel',
+        style: 'cancel',
+      },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteTalent(talentId);
+
+            Alert.alert(
+              'Success',
+              'Talent profile deleted successfully.',
+              [
+                {
+                  text: 'OK',
+                  onPress: () => {
+                    router.replace('/my-talents');
+                  },
+                },
+              ]
+            );
+          } catch (error) {
+            Alert.alert(
+              'Delete Failed',
+              getApiErrorMessage(error)
+            );
+          }
+        },
+      },
+    ]
+  );
+};
 
   useFocusEffect(
     useCallback(() => {
@@ -169,7 +108,23 @@ export default function ManageTalentScreen() {
       }
     }, [id])
   );
+  
+  const handleAvailabilityChange = async (value: boolean) => {
+  setIsAvailable(value);
 
+  try {
+    await updateTalent(Number(id), {
+      is_available: value,
+    });
+  } catch (error) {
+    setIsAvailable(!value);
+
+    Alert.alert(
+      "Error",
+      getApiErrorMessage(error)
+    );
+  }
+};
   if (isLoading) {
     return (
       <View style={styles.center}>
@@ -198,13 +153,11 @@ export default function ManageTalentScreen() {
     >
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()}>
-          <Text style={styles.backButton}>‹ Back</Text>
-        </Pressable>
-
-        <Text style={styles.headerTitle}>
-          Manage Talent
-        </Text>
+        
+    <AvailabilityToggle
+  value={isAvailable}
+  onChange={handleAvailabilityChange}
+/>
 
         <View style={{ width: 50 }} />
       </View>
@@ -267,12 +220,13 @@ export default function ManageTalentScreen() {
       {/* Edit */}
       <Pressable
         style={styles.editButton}
-        onPress={() =>
-          Alert.alert(
-            'Coming next',
-            'Talent editing will be added next.'
-          )
-        }
+ onPress={() => 
+  router.push({
+    pathname: '/edit-talent/[id]',
+    params: { id: talent.id.toString() } 
+  })
+}
+
       >
         <Text style={styles.editButtonText}>
           Edit Talent
@@ -323,6 +277,10 @@ export default function ManageTalentScreen() {
   talent={talent}
   onRefresh={loadTalent}
 />
+
+<Pressable style={{marginBottom:30,marginTop:10} } onPress={()=>handleDeleteTalent(talent?.id)} >
+  <Text>Delet Talent </Text>
+</Pressable>
     </ScrollView>
   );
 }

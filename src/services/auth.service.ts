@@ -125,3 +125,30 @@ export const clearStoredTokens = async ()=>{
     await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY)
 }
 
+
+export const resetPassword = async (
+  uid: string,
+  token: string,
+  newPassword: string,
+) => {
+  const response = await api.post(
+    '/api/auth/password-reset-confirm/',
+    {
+      uid,
+      token,
+      new_password: newPassword,
+    },
+  );
+
+  return response.data;
+};
+
+
+export const deleteAccount = async (
+  password: string
+): Promise<void> => {
+  await api.post('/api/account/delete/', {
+    password,
+  });
+};
+

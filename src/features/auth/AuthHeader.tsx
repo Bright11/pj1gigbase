@@ -1,25 +1,26 @@
 import { Mycolors } from "@/constants/mycolors";
-import {StyleSheet, Text, View} from "react-native";
+import {StyleProp, StyleSheet, Text, TextStyle, View} from "react-native";
 
 interface AuthHeaderProps {
     title:string;
     subtitle?:string;
+   newstyles?: StyleProp<TextStyle>; 
 
 }
 
 
-export function AuthHeader({title,subtitle}:AuthHeaderProps){
+export function AuthHeader({title,subtitle,newstyles}:AuthHeaderProps){
     return(
         <View style={styles.container}>
-            <Text style={styles.title}>{title}</Text>
-            {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+            <Text style={[styles.title,newstyles]}>{title}</Text>
+            {subtitle && <Text style={[styles.subtitle,newstyles]}>{subtitle}</Text>}
         </View>
     )
 }
 
 const styles = StyleSheet.create({
     container:{
-        marginBottom:32
+        marginBottom:12
     },
     title:{
         fontSize:30,

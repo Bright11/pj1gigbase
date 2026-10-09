@@ -37,8 +37,7 @@ export default function RootLayout() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AnimatedSplashOverlay />
       <Stack>        
-        {/*  <Stack initialRouteName="(tabs)">  */}
-         {/* <Stack.Screen name="home" options={{ headerShown: false }} /> */}
+      
           <Stack.Screen name='(tabs)'  options={{headerShown:false}}/>
         <Stack.Screen name='(auth)'  options={{headerShown:false}}/>
         <Stack.Screen name='post-talent' options={{headerShown:false}}/>
@@ -50,6 +49,10 @@ export default function RootLayout() {
         <Stack.Screen name='booking/[talentId]' options={{headerShown:false}}/>
         <Stack.Screen name='booking/bookingrequest' options={{headerShown:false}}/>
         <Stack.Screen name='booking/my-bookings' options={{headerShown:false}}/>
+        <Stack.Screen name='edit-talent/[id]' options={{headerShown:false}}/>
+        <Stack.Screen name='profile/edit' options={{headerShown:false}}/>
+
+
         {/* <Stack.Screen name='auth/login' options={{headerShown:false}}/> */}
 
 

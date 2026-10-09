@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -101,6 +102,29 @@ export default function ChatScreen() {
   );
 
   const insets = useSafeAreaInsets();
+
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+useEffect(() => {
+  const showEvent =
+    Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+
+  const hideEvent =
+    Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+  const showSubscription = Keyboard.addListener(showEvent, () => {
+    setKeyboardVisible(true);
+  });
+
+  const hideSubscription = Keyboard.addListener(hideEvent, () => {
+    setKeyboardVisible(false);
+  });
+
+  return () => {
+    showSubscription.remove();
+    hideSubscription.remove();
+  };
+}, []);
 
   const [messages, setMessages] =
     useState<Message[]>([]);
@@ -381,104 +405,130 @@ useEffect(() => {
         <View style={styles.headerBackButton} />
       </View>
 
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
-      >
-        {loading ? (
-          <View style={styles.center}>
-            <ActivityIndicator color={Mycolors.primarycolor ?? '#007AFF'} />
+     <KeyboardAvoidingView
+  style={styles.container}
+  behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+  keyboardVerticalOffset={0}
+>
+  {loading ? (
+    <View style={styles.center}>
+      <ActivityIndicator
+        color={Mycolors.primarycolor}
+      />
 
-            <Text style={styles.statusText}>
-              Loading messages...
+      <Text style={styles.statusText}>
+        Loading messages...
+      </Text>
+    </View>
+  ) : (
+    <>
+      <FlatList
+        ref={listRef}
+        data={listData}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        contentContainerStyle={
+          listData.length === 0
+            ? styles.emptyList
+            : styles.messageList
+        }
+        onContentSizeChange={() => {
+          if (
+            messages.length > 0 &&
+            !hasScrolledToBottomRef.current
+          ) {
+            hasScrolledToBottomRef.current = true;
+
+            listRef.current?.scrollToEnd({
+              animated: false,
+            });
+          }
+        }}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <View style={styles.emptyIconCircle}>
+              <Text style={styles.emptyIconText}>
+                💬
+              </Text>
+            </View>
+
+            <Text style={styles.emptyTitle}>
+              No messages yet
+            </Text>
+
+            <Text style={styles.emptySubtitle}>
+              Say hello to get the conversation started.
             </Text>
           </View>
-        ) : (
-          <>
-            <FlatList
-              ref={listRef}
-              data={listData}
-              keyExtractor={(item) => item.id}
-              renderItem={renderItem}
-             
-              contentContainerStyle={
-                listData.length === 0
-                  ? styles.emptyList
-                  : styles.messageList
-              }
-              onContentSizeChange={() => {
-              if (
-                messages.length > 0 &&
-                !hasScrolledToBottomRef.current
-              ) {
-                hasScrolledToBottomRef.current = true;
+        }
+      />
 
-                listRef.current?.scrollToEnd({
-                  animated: false,
-                });
-              }
-            }}
-              ListEmptyComponent={
-                <View style={styles.emptyState}>
-                  <View style={styles.emptyIconCircle}>
-                    <Text style={styles.emptyIconText}>💬</Text>
-                  </View>
-                  <Text style={styles.emptyTitle}>No messages yet</Text>
-                  <Text style={styles.emptySubtitle}>
-                    Say hello to get the conversation started.
-                  </Text>
-                </View>
-              }
+      {error && (
+        <View style={styles.errorBanner}>
+          <Text style={styles.errorText}>
+            {error}
+          </Text>
+
+          <Pressable
+            onPress={() => setError(null)}
+            hitSlop={8}
+          >
+            <Text style={styles.errorDismiss}>
+              ✕
+            </Text>
+          </Pressable>
+        </View>
+      )}
+
+      <View    style={[
+    styles.inputContainer,
+    {
+      paddingBottom: keyboardVisible
+        ? 8
+        : Math.max(insets.bottom, 8),
+    },
+  ]}>
+        <TextInput
+          style={styles.input}
+          placeholder="Type a message..."
+          placeholderTextColor="#9a9a9a"
+          value={messageText}
+          onChangeText={setMessageText}
+          multiline
+          editable={!sending}
+        />
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.sendButton,
+            (sending || !messageText.trim()) &&
+              styles.sendButtonDisabled,
+            pressed &&
+            messageText.trim() &&
+            !sending
+              ? styles.sendButtonPressed
+              : null,
+          ]}
+          onPress={handleSendMessage}
+          disabled={
+            sending || !messageText.trim()
+          }
+        >
+          {sending ? (
+            <ActivityIndicator
+              size="small"
+              color="#ffffff"
             />
-
-            {error && (
-              <View style={styles.errorBanner}>
-                <Text style={styles.errorText}>{error}</Text>
-                <Pressable onPress={() => setError(null)} hitSlop={8}>
-                  <Text style={styles.errorDismiss}>✕</Text>
-                </Pressable>
-              </View>
-            )}
-
-            <View
-              style={[
-                styles.inputContainer,
-                { paddingBottom: Math.max(insets.bottom, 12) },
-              ]}
-            >
-              <TextInput
-                style={styles.input}
-                placeholder="Type a message..."
-                placeholderTextColor="#9a9a9a"
-                value={messageText}
-                onChangeText={setMessageText}
-                multiline
-                editable={!sending}
-              />
-
-              <Pressable
-                style={({ pressed }) => [
-                  styles.sendButton,
-                  (sending || !messageText.trim()) &&
-                    styles.sendButtonDisabled,
-                  pressed && messageText.trim() && !sending
-                    ? styles.sendButtonPressed
-                    : null,
-                ]}
-                onPress={handleSendMessage}
-                disabled={sending || !messageText.trim()}
-              >
-                {sending ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
-                ) : (
-                  <Text style={styles.sendButtonText}>➤</Text>
-                )}
-              </Pressable>
-            </View>
-          </>
-        )}
-      </KeyboardAvoidingView>
+          ) : (
+            <Text style={styles.sendButtonText}>
+              ➤
+            </Text>
+          )}
+        </Pressable>
+      </View>
+    </>
+  )}
+</KeyboardAvoidingView>
     </ProtectedRoute>
   );
 }
@@ -725,29 +775,53 @@ const styles = StyleSheet.create({
   },
 
   // Input bar
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    marginTop: 4,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#e2e2e2',
-    gap: 8,
-    backgroundColor: Mycolors.whitecolor,
-  },
+  // inputContainer: {
+  //   flexDirection: 'row',
+  //   alignItems: 'flex-end',
+  //   paddingHorizontal: 12,
+  //   paddingTop: 10,
+  //   marginTop: 4,
+  //   borderTopWidth: StyleSheet.hairlineWidth,
+  //   borderTopColor: '#e2e2e2',
+  //   gap: 8,
+  //   backgroundColor: Mycolors.whitecolor,
+  // },
 
-  input: {
-    flex: 1,
-    minHeight: 44,
-    maxHeight: 120,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    fontSize: 16,
-    color: '#222',
-  },
+  // input: {
+  //   flex: 1,
+  //   minHeight: 44,
+  //   maxHeight: 120,
+  //   backgroundColor: '#f5f5f5',
+  //   borderRadius: 20,
+  //   paddingHorizontal: 16,
+  //   paddingVertical: 10,
+  //   fontSize: 16,
+  //   color: '#222',
+  // },
+
+inputContainer: {
+  flexDirection: "row",
+  alignItems: "flex-end",
+  paddingHorizontal: 12,
+  paddingTop: 8,
+  gap: 8,
+  backgroundColor: Mycolors.whitecolor,
+  borderTopWidth: StyleSheet.hairlineWidth,
+  borderTopColor: "#e2e2e2",
+},
+
+input: {
+  flex: 1,
+  minHeight: 44,
+  maxHeight: 120,
+  backgroundColor: '#f5f5f5',
+  borderRadius: 20,
+  paddingHorizontal: 16,
+  paddingTop: 10,
+  paddingBottom: 10,
+  fontSize: 16,
+  color: '#222',
+},
 
   sendButton: {
     width: 44,

@@ -11,15 +11,27 @@ import {
 import { useEffect, useState } from 'react';
 import type { Category } from '@/types/category';
 import { getcategories } from '@/services/category.service';
-import { CreateTalentRequest } from '@/types/Talent';
+import { CreateTalentRequest, Talent, TalentLevel } from '@/types/Talent';
 import { createTalent } from '@/services/talent.service';
 import { Mycolors } from '@/constants/mycolors';
 import { getApiErrorMessage } from '@/services/api.error';
+import { levelData } from '@/utils/levelData';
+import { router } from 'expo-router';
 
-export default function CreateTalentForm() {
+interface CreateTalentFormProps {
+  onTalentCreated: (talent: Talent) => void;
+}
+
+
+export default function CreateTalentForm({   onTalentCreated,
+}: CreateTalentFormProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] =
     useState<Category | null>(null);
+    const [level, setLevel] = useState<TalentLevel>('beginner');
+const [showLevels, setShowLevels] = useState(false);
+
+
 
   const [stageName, setStageName] = useState('');
   const [title, setTitle] = useState('');
@@ -61,6 +73,7 @@ export default function CreateTalentForm() {
   }, []);
 
   const handleSubmit = async () => {
+   
     if (!title.trim()) {
       Alert.alert(
         'Required',
@@ -77,6 +90,14 @@ export default function CreateTalentForm() {
       return;
     }
 
+     if (!level) {
+      Alert.alert(
+        'Required',
+        'Please select your level.'
+      );
+      return;
+    }
+
     const data: CreateTalentRequest = {
       stage_name: stageName.trim() || undefined,
       category: selectedCategory.id,
@@ -85,6 +106,7 @@ export default function CreateTalentForm() {
       hourly_rate: hourlyRate.trim() || undefined,
       fixed_rate: fixedRate.trim() || undefined,
       currency: currency.trim() || 'GHS',
+      level: level,
     };
 
     try {
@@ -97,11 +119,24 @@ export default function CreateTalentForm() {
         'Talent created successfully:',
         response
       );
+      
+      onTalentCreated(response);
 
-      Alert.alert(
-        'Success',
-        'Your talent has been created.'
-      );
+      
+      // Alert.alert(
+      //   'Success',
+      //   'Your talent has been created.',
+      //   [
+      //     {
+      //       text:'OK',
+      //       onPress:()=>{
+      //         router.replace(
+      //           "/my-talents"
+      //         )
+      //       }
+      //     }
+      //   ]
+      // );
 
     } catch (error) {
         const message = getApiErrorMessage(error)
@@ -197,6 +232,40 @@ export default function CreateTalentForm() {
           </View>
         )}
       </View>
+
+      {/* select lavel */}
+      <View style={styles.field}>
+  <Text style={styles.label}>Talent Level *</Text>
+
+  <Pressable
+    style={styles.selector}
+    onPress={() => setShowLevels(!showLevels)}
+  >
+    <Text style={styles.selectedText}>
+      {levelData.find(item => item.value === level)?.label}
+    </Text>
+  </Pressable>
+
+  {showLevels && (
+    <View style={styles.categoryList}>
+      {levelData.map((item) => (
+        <Pressable
+          key={item.value}
+          style={styles.categoryItem}
+          onPress={() => {
+            setLevel(item.value);
+              console.log("Selected level value new:", level); 
+            setShowLevels(false);
+          }}
+        >
+          <Text style={styles.categoryText}>
+            {item.label}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
+  )}
+</View>
 
       {/* Title */}
       <View style={styles.field}>

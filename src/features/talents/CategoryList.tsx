@@ -1,142 +1,147 @@
-import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator } from 'react-native';
-import { Image } from 'expo-image';
-import { Datacategory } from './categories.data';
-import { getcategories } from '@/services/category.service';
-import { useEffect, useState } from 'react';
-import { Category } from '@/types/category';
 
+import React, { useCallback, useState } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { Image } from 'expo-image';
+import { router, useFocusEffect } from 'expo-router';
+
+import { getcategories } from '@/services/category.service';
+import { Category } from '@/types/category';
+import { Mycolors } from '@/constants/mycolors';
 
 export default function CategoryList() {
-//     const Datacategory = [
-//   {
-//     id: 1,
-//     title: 'Music',
-//     image: 'https://picsum.photos/seed/music/400/300',
-//   },
-//   {
-//     id: 2,
-//     title: 'Dance',
-//     image: 'https://picsum.photos/seed/dance/400/300',
-//   },
-//   {
-//     id: 3,
-//     title: 'Comedy',
-//     image: 'https://picsum.photos/seed/comedy/400/300',
-//   },
-//   {
-//     id: 4,
-//     title: 'Photography',
-//     image: 'https://picsum.photos/seed/photo/400/300',
-//   },
-//   {
-//     id: 5,
-//     title: 'MC',
-//     image: 'https://picsum.photos/seed/mc/400/300',
-//   },
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-//    {
-//     id: 6,
-//     title: 'Music',
-//     image: 'https://picsum.photos/seed/music/500/500',
-//   },
-//   {
-//     id: 7,
-//     title: 'Dance',
-//     image: 'https://picsum.photos/seed/dance/500/500',
-//   },
-//   {
-//     id: 8,
-//     title: 'Comedy',
-//     image: 'https://picsum.photos/seed/comedy/500/500',
-//   },
-//   {
-//     id: 9,
-//     title: 'Photography',
-//     image: 'https://picsum.photos/seed/photography/500/500',
-//   },
-//   {
-//     id: 10,
-//     title: 'DJ',
-//     image: 'https://picsum.photos/seed/dj/500/500',
-//   },
-//   {
-//     id: 13,
-//     title: 'MC',
-//     image: 'https://picsum.photos/seed/mc/500/500',
-//   },
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
 
-//   {
-//     id: 14,
-//     title: 'DJ',
-//     image: 'https://picsum.photos/seed/dj/500/500',
-//   },
-//   {
-//     id: 15,
-//     title: 'MC',
-//     image: 'https://picsum.photos/seed/mc/500/500',
-//   },
-// ];
-    console.log("data", Datacategory.length)
-    const [categories,setCategories]=useState<Category[]>([]);
-    const [isloading,setIsloading] = useState(true)
-    const [error,setErro] = useState<string |null>(null)
+      const loadCategories = async () => {
+        try {
+          setIsLoading(true);
+          setError(null);
 
-    useEffect(()=>{
-      const loadCategories = async()=>{
-        try{
-          setIsloading(true)
-          setErro(null)
           const data = await getcategories();
-          setCategories(data)
-          
-        }
-        catch(error){
-          console.log("Failed to load categories", error)
-          setErro("Unable to load categories")
-          
-          
-        }finally{
-          setIsloading(false)
-        }
-      }
-      loadCategories()
-    },[])
-    if(isloading){
-      return(
-        <View>
-          <ActivityIndicator size="large"/>
-        </View>
-      )
-    }
 
-    if(error){
+          if (isActive) {
+            setCategories(data);
+          }
+        } catch (error) {
+          console.log('Failed to load categories:', error);
+
+          if (isActive) {
+            setError('Unable to load categories');
+          }
+        } finally {
+          if (isActive) {
+            setIsLoading(false);
+          }
+        }
+      };
+
+      loadCategories();
+
+      return () => {
+        isActive = false;
+      };
+    }, [])
+  );
+
+  if (isLoading) {
+    return (
       <View style={styles.center}>
-        <Text>Please check your internet connection or refresh the app</Text>
+        <ActivityIndicator
+          size="large"
+          color={Mycolors.secondarycolor}
+        />
+
+        <Text style={styles.loadingText}>
+          Loading categories...
+        </Text>
       </View>
-    }
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.errorTitle}>
+          Something went wrong
+        </Text>
+
+        <Text style={styles.errorText}>
+          Please check your internet connection or refresh the app.
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.container}
     >
-      <Text style={styles.title}>Categories</Text>
-      
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerText}>
+          <Text style={styles.subtitle}>
+            Find the perfect talent for your needs
+          </Text>
+        </View>
 
+        <Pressable
+          onPress={() => router.push('/services')}
+          hitSlop={8}
+        >
+          <Text style={styles.seeAll}>
+            See all
+          </Text>
+        </Pressable>
+      </View>
+
+      {/* 3 Column Category Grid */}
       <View style={styles.grid}>
         {categories.map((category) => (
           <Pressable
             key={category.id}
-            style={styles.card}
+            style={({ pressed }) => [
+              styles.card,
+              pressed && styles.cardPressed,
+            ]}
             onPress={() => {
               console.log('Selected category:', category);
+
+              router.push({
+                pathname: '/services',
+                params: {
+                  category: category.slug,
+                },
+              });
             }}
           >
             <Image
-               source={{ uri: category.image }}
+              source={{ uri: category.image }}
               style={styles.cardImage}
               contentFit="cover"
+              transition={200}
             />
-            <Text style={styles.cardTitle}>{category.name}</Text>
+
+            <View style={styles.cardOverlay} />
+
+            <Text
+              style={styles.cardTitle}
+              numberOfLines={2}
+            >
+              {category.name}
+            </Text>
           </Pressable>
         ))}
       </View>
@@ -145,42 +150,130 @@ export default function CategoryList() {
 }
 
 const styles = StyleSheet.create({
- container: {
-  padding: 16,
-  paddingBottom: 30,
-  backgroundColor: '#fff',
-  borderWidth: 3,
-  borderColor: 'lime',
-},
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    marginBottom: 16,
+  container: {
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 30,
+    backgroundColor: Mycolors.whitecolor,
   },
+
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+
+  headerText: {
+    flex: 1,
+  },
+
+  subtitle: {
+    color: '#777',
+    fontSize: 12,
+    lineHeight: 18,
+  },
+
+  seeAll: {
+    color: Mycolors.secondarycolor,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+
+  /* =========================
+     3 COLUMN GRID
+  ========================= */
+
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
+
   card: {
-    width: '31%',
-    marginBottom: 18,
+    width: '31.5%',
+    height: 118,
+
+    marginBottom: 12,
+
+    borderRadius: 13,
+
+    overflow: 'hidden',
+
+    backgroundColor: '#eee',
+
+    elevation: 2,
+
+    shadowColor: Mycolors.primarycolor,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
   },
+
+  cardPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.98 }],
+  },
+
   cardImage: {
-  width: '100%',
-  height: 100,
-  borderRadius: 12,
-  backgroundColor: '#eee',
-},
-  cardTitle: {
-    marginTop: 7,
-    fontSize: 15,
-    fontWeight: '600',
-    textAlign: 'center',
+    width: '100%',
+    height: '100%',
   },
-  center:{
-    paddingVertical:30,
-    alignItems:'center',
-    justifyContent:'center'
-  }
+
+ cardOverlay: {
+  ...StyleSheet.absoluteFill,
+  backgroundColor: 'rgba(1, 4, 37, 0.35)',
+},
+
+  cardTitle: {
+    position: 'absolute',
+
+    left: 9,
+    right: 7,
+    bottom: 9,
+
+    color: Mycolors.whitecolor,
+
+    fontSize: 12,
+    lineHeight: 15,
+    fontWeight: '800',
+  },
+
+  /* =========================
+     LOADING / ERROR
+  ========================= */
+
+  center: {
+    minHeight: 180,
+
+    alignItems: 'center',
+    justifyContent: 'center',
+
+    paddingHorizontal: 30,
+
+    backgroundColor: Mycolors.whitecolor,
+  },
+
+  loadingText: {
+    color: Mycolors.graycolor,
+    marginTop: 10,
+    fontSize: 13,
+  },
+
+  errorTitle: {
+    color: Mycolors.primarycolor,
+    fontSize: 16,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+
+  errorText: {
+    color: '#777',
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
 });
