@@ -3,7 +3,7 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store'
 
 
-// const API_BASE_URL = "https://c7de-154-161-127-156.ngrok-free.app"; 
+// const API_BASE_URL = "https://215f-154-161-124-66.ngrok-free.app"; 
 
 export const API_BASE_URL ='https://web-production-50fd3.up.railway.app';
 

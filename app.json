@@ -20,7 +20,7 @@
     },
     "android": {
       "package": "com.pj1gigbase.app",
-      "versionCode": 7,
+      "versionCode": 10,
        "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
