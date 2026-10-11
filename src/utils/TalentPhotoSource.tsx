@@ -15,6 +15,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { deleteGalleryImage, uploadGalleryImage } from '@/services/talent.service';
 import { getApiErrorMessage } from '@/services/api.error';
 import { Talent } from '@/types/Talent';
+import { optimizeCloudinaryImage } from './cloudinaryImage';
 
 interface TalentPhotoSectionProps {
   talent: Talent;
@@ -152,12 +153,14 @@ export default function TalentPhotoSection({
     key={image.id}
     style={styles.imageWrapper}
   >
-    <Image
-      source={{
-        uri: image.image_url!,
-      }}
-      style={styles.image}
-    />
+   <Image
+  source={{
+    uri: optimizeCloudinaryImage(image.image_url, {
+      width: 400,
+    }),
+  }}
+  style={styles.image}
+/>
 
     <TouchableOpacity
       style={styles.deleteButton}

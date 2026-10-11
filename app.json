@@ -3,7 +3,7 @@
     "name": "PJ1 GIGBASE",
     "slug": "pj1-gigbase",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "pj1gigbase",
     "userInterfaceStyle": "automatic",
@@ -20,11 +20,11 @@
     },
     "android": {
       "package": "com.pj1gigbase.app",
-      "versionCode": 10,
-       "googleServicesFile": "./google-services.json",
+      "versionCode": 12,
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#010425", 
+        "backgroundColor": "#010425",
         "monochromeImage": "./assets/images/adaptive-icon.png"
       }
     },
@@ -35,14 +35,23 @@
     },
     "plugins": [
       [
-         "expo-splash-screen",
-    { 
-      "backgroundColor": "#010425",
-      "image": "./assets/images/splash.png",
-      "imageWidth": 200
-    }
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#010425",
+          "image": "./assets/images/splash.png",
+          "imageWidth": 200
+        }
       ],
       "expo-router",
+      [
+  "expo-build-properties",
+  {
+    "android": {
+      "enableMinifyInReleaseBuilds": true,
+      "enableShrinkResourcesInReleaseBuilds": true
+    }
+  }
+],
       [
         "expo-image-picker",
         {
@@ -56,6 +65,7 @@
       "expo-secure-store",
       "expo-video",
       "@react-native-community/datetimepicker"
+    
     ],
     "experiments": {
       "typedRoutes": true
@@ -65,9 +75,7 @@
         "projectId": "e80c4e53-e207-4929-a571-344f444ed17d"
       }
     },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "1.0.0",
     "updates": {
       "enabled": true,
       "checkAutomatically": "ON_LOAD",

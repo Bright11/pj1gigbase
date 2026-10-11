@@ -34,6 +34,7 @@ import {
 import {
   updateProfileImage,
 } from '@/services/profile.service';
+import { optimizeCloudinaryImage } from '@/utils/cloudinaryImage';
 
 export default function ProfileScreen() {
   const user = useAuthStore(
@@ -252,15 +253,11 @@ export default function ProfileScreen() {
 
   const profilePicture =
     profile.profile_picture;
+    // console.log("profile image", profilePicture)
 
   return (
     <ProtectedRoute>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={
-          Mycolors.primarycolor
-        }
-      />
+       <StatusBar barStyle="light-content" />
 
       <ScrollView
         style={styles.container}
@@ -286,12 +283,15 @@ export default function ProfileScreen() {
             style={styles.avatarWrap}
           >
             {profilePicture ? (
+            
               <Image
-                source={{
-                  uri: profilePicture,
-                }}
-                style={styles.profileImage}
-              />
+  source={{
+    uri: optimizeCloudinaryImage(profilePicture, {
+      width: 400,
+    }),
+  }}
+  style={styles.profileImage}
+/>
             ) : (
               <View
                 style={

@@ -77,13 +77,13 @@ const [showLevels, setShowLevels] =
     setIsLoading(true);
 
     const [talentData, categoryData] =
-      await Promise.all([
-        getTalent(Number(id)),
-        getcategories(),
-      ]);
+  await Promise.all([
+    getTalent(Number(id)),
+    getcategories(1, 100),
+  ]);
 
-    setTalent(talentData);
-    setCategories(categoryData);
+setTalent(talentData);
+setCategories(categoryData.results);
 
     setStageName(
       talentData.stage_name ?? ''

@@ -12,6 +12,7 @@ import type { PublicTalent } from '@/types/Talent';
 import { Mycolors } from '@/constants/mycolors';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { optimizeCloudinaryImage } from './cloudinaryImage';
 
 interface PublicTalentCardProps {
   talent: PublicTalent;
@@ -101,10 +102,18 @@ export default function PublicTalentCard({
 
       <View style={styles.imageWrapper}>
         {image?.image_url ? (
+          // <Image
+          //   source={{ uri: image.image_url }}
+          //   style={styles.image}
+          // />
           <Image
-            source={{ uri: image.image_url }}
-            style={styles.image}
-          />
+  source={{
+    uri: optimizeCloudinaryImage(image.image_url, {
+      width: 400,
+    }),
+  }}
+  style={styles.image}
+/>
         ) : profilePicture ? (
           <Image
             source={{ uri: profilePicture }}

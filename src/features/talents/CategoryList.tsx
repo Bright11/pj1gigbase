@@ -14,6 +14,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { getcategories } from '@/services/category.service';
 import { Category } from '@/types/category';
 import { Mycolors } from '@/constants/mycolors';
+import { publicAPI } from '@/services/api';
 
 export default function CategoryList() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -29,11 +30,20 @@ export default function CategoryList() {
           setIsLoading(true);
           setError(null);
 
-          const data = await getcategories();
+          // const data = await getcategories();
+       const response = await publicAPI.get<Category[]>(
+  '/api/categories/',
+  {
+    params: {
+      random: 'true',
+      limit: 9,
+    },
+  },
+);
 
-          if (isActive) {
-            setCategories(data);
-          }
+if (isActive) {
+  setCategories(response.data);
+}
         } catch (error) {
           console.log('Failed to load categories:', error);
 
@@ -93,12 +103,12 @@ export default function CategoryList() {
       <View style={styles.header}>
         <View style={styles.headerText}>
           <Text style={styles.subtitle}>
-            Find the perfect talent for your needs
+            Find the perfect category for your needs
           </Text>
         </View>
 
         <Pressable
-          onPress={() => router.push('/services')}
+          onPress={() => router.push('/all-categories')}
           hitSlop={8}
         >
           <Text style={styles.seeAll}>
@@ -127,12 +137,17 @@ export default function CategoryList() {
               });
             }}
           >
-            <Image
-              source={{ uri: category.image }}
-              style={styles.cardImage}
-              contentFit="cover"
-              transition={200}
-            />
+            {category.image ? (
+  <Image
+    source={{ uri: category.image }}
+    style={styles.cardImage}
+    contentFit="cover"
+    cachePolicy="memory-disk"
+    transition={200}
+  />
+) : (
+  <View style={styles.cardImage} />
+)}
 
             <View style={styles.cardOverlay} />
 

@@ -278,8 +278,8 @@ const handleDeleteTalent = (talentId: number) => {
   onRefresh={loadTalent}
 />
 
-<Pressable style={{marginBottom:30,marginTop:10} } onPress={()=>handleDeleteTalent(talent?.id)} >
-  <Text>Delet Talent </Text>
+<Pressable style={{marginBottom:40,marginTop:15,backgroundColor:'red',alignContent:'center',padding:8, width:'auto', borderRadius:20} } onPress={()=>handleDeleteTalent(talent?.id)} >
+  <Text style={{alignItems:"center",textAlign:'center', color:Mycolors.whitecolor,fontSize:18}}>Delet Talent </Text>
 </Pressable>
     </ScrollView>
   );

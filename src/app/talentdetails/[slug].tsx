@@ -28,12 +28,14 @@ import { Mycolors } from '@/constants/mycolors';
 import { useAuthStore } from '@/store/auth.store';
 import { createConversation } from '@/services/chat.service';
 import TalentReviewSection from '@/features/reviews/TalentReviewSection';
+import ShareTalentButton from '@/features/talents/ShareTalentButton';
+import { optimizeCloudinaryImage } from '@/utils/cloudinaryImage';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const GALLERY_HEIGHT = 380;
 
-const FALLBACK_PHONE = '+233543461813';
+// const FALLBACK_PHONE = '+233543461813';
 
 const HARDCODED_DESCRIPTION =
   'A versatile performer known for bringing energy, professionalism, ' +
@@ -158,10 +160,14 @@ function Gallery({
   return (
     <View style={styles.gallery}>
       {singleImage ? (
-        <Image
-          source={{ uri: fallbackUri! }}
-          style={styles.galleryImage}
-        />
+       <Image
+  source={{
+    uri: optimizeCloudinaryImage(fallbackUri, {
+      width: 1000,
+    }),
+  }}
+  style={styles.galleryImage}
+/>
       ) : (
         <ScrollView
           horizontal
@@ -173,10 +179,14 @@ function Gallery({
         >
           {images.map((image) => (
             <Image
-              key={image.id}
-              source={{ uri: image.image_url! }}
-              style={styles.galleryImage}
-            />
+    key={image.id}
+    source={{
+      uri: optimizeCloudinaryImage(image.image_url, {
+        width: 1000,
+      }),
+    }}
+    style={styles.galleryImage}
+  />
           ))}
         </ScrollView>
       )}
@@ -407,28 +417,36 @@ export default function TalentDetailsScreen() {
         </TouchableOpacity>
       ),
 
-      headerRight: () => (
-        <TouchableOpacity
-          style={styles.headerButton}
-          activeOpacity={0.8}
-          onPress={() => {
-            if (!talent) return;
+     headerRight: () => (
+  <View style={styles.headerActions}>
+    <ShareTalentButton
+      slug={talent?.slug ?? ''}
+      talentName={talent?.stage_name || talent?.title || 'this talent'}
+      iconOnly
+    />
 
-            router.push({
-              pathname: '/booking/[talentId]',
-              params: {
-                talentId: talent.slug,
-              },
-            });
-          }}
-        >
-          <Ionicons
-            name="calendar-outline"
-            size={21}
-            color={Mycolors.whitecolor}
-          />
-        </TouchableOpacity>
-      ),
+    <TouchableOpacity
+      style={styles.headerButton}
+      activeOpacity={0.8}
+      onPress={() => {
+        if (!talent) return;
+
+        router.push({
+          pathname: '/booking/[talentId]',
+          params: {
+            talentId: talent.slug,
+          },
+        });
+      }}
+    >
+      <Ionicons
+        name="calendar-outline"
+        size={21}
+        color={Mycolors.whitecolor}
+      />
+    </TouchableOpacity>
+  </View>
+),
     });
   }, [navigation, talent]);
 
@@ -558,7 +576,7 @@ export default function TalentDetailsScreen() {
     .join(', ');
 
   const callablePhone =
-    phoneNumber || FALLBACK_PHONE;
+    phoneNumber;
 
   /* ---------------------------------------------------------------------- */
   /* CALL                                                                    */
@@ -1593,4 +1611,8 @@ const styles = StyleSheet.create({
     opacity: 0.75,
     transform: [{ scale: 0.98 }],
   },
+  headerActions: {
+  flexDirection: 'row',
+  alignItems: 'center',
+},
 });

@@ -111,7 +111,7 @@ export default function DashboardContent():ReactElement {
 
   return (
 <ProtectedRoute>
-   <StatusBar backgroundColor="white"/>
+     <StatusBar barStyle="light-content" />
      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.headerBlock}>
         <Text style={styles.greeting}>Welcome back</Text>

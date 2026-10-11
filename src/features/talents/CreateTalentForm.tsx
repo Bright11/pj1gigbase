@@ -50,8 +50,8 @@ const [showLevels, setShowLevels] = useState(false);
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        const data = await getcategories();
-        setCategories(data);
+       const data = await getcategories(1, 100);
+setCategories(data.results);
       } catch (error) {
       
         console.error(

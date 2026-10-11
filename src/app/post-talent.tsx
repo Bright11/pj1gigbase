@@ -221,10 +221,7 @@ export default function PostTalentScreen() {
   return (
     <ProtectedRoute>
       <View style={styles.screen}>
-        <StatusBar
-          backgroundColor={Mycolors.primarycolor}
-          barStyle="light-content"
-        />
+        <StatusBar barStyle="light-content" />
 
         {/* Step Header */}
         <View style={styles.stepHeader}>

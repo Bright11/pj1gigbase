@@ -9,7 +9,7 @@ npx expo run:android
 
 npx expo start --clear    
 npx expo prebuild --clean --platform android    
-
+npx eas-cli build --platform android --profile production                             
 
 TypeScript interfaces for users, login responses, registration data, etc.
 
