@@ -13,6 +13,7 @@ import { router, useNavigation } from 'expo-router';
 import { Mycolors } from '@/constants/mycolors';
 import Category from '@/features/talents/Category';
 import { useAuthStore } from '@/store/auth.store';
+import { StatusBar } from 'expo-status-bar';
 
 export default function HomeScreen() {
   const user = useAuthStore((state) => state.user);
@@ -75,6 +76,7 @@ export default function HomeScreen() {
       style={styles.container}
       edges={['top']}
     >
+       <StatusBar style="auto" />
       <Category />
     </SafeAreaView>
   );

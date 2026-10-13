@@ -1,7 +1,6 @@
 
 import { useEffect, useLayoutEffect, useState } from 'react';
 import {
-  StatusBar,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -12,6 +11,8 @@ import { Mycolors } from '@/constants/mycolors';
 import PublicTalentList from '@/utils/PublicTalentList';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 
 
 export default function ServiceScreen() {
@@ -33,8 +34,10 @@ export default function ServiceScreen() {
   }, [search]);
 
   return (
+    <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+       <StatusBar style="auto" />
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      
       <View style={styles.searchContainer}>
         <TextInput
           value={search}
@@ -54,6 +57,7 @@ export default function ServiceScreen() {
         />
       </View>
     </View>
+    </SafeAreaView>
   );
 }
 

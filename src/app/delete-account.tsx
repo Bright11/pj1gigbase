@@ -15,6 +15,9 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { clearStoredTokens, deleteAccount } from '@/services/auth.service';
 import { useAuthStore } from '@/store/auth.store';
+import { ProtectedRoute } from '@/utils/ProtectedRoute';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 
 export default function DeleteAccountScreen() {
   const [password, setPassword] = useState('');
@@ -73,6 +76,9 @@ const confirmDeleteAccount = async () => {
 };
 
   return (
+    <ProtectedRoute>
+       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+           <StatusBar style="auto" />
     <KeyboardAvoidingView
       style={styles.container}
       behavior={
@@ -155,6 +161,8 @@ const confirmDeleteAccount = async () => {
         </Pressable>
       </View>
     </KeyboardAvoidingView>
+    </SafeAreaView>
+    </ProtectedRoute>
   );
 }
 

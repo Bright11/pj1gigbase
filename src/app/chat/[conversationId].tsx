@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Mycolors } from '@/constants/mycolors';
 import { ProtectedRoute } from '@/utils/ProtectedRoute';
@@ -26,6 +26,7 @@ import {
 
 import type { Message } from '@/types/chat';
 import { getApiErrorMessage } from '@/services/api.error';
+import { StatusBar } from 'expo-status-bar';
 
 // A message list item is either a real message or a synthetic date divider.
 type ListItem =
@@ -384,8 +385,10 @@ useEffect(() => {
 
   return (
     <ProtectedRoute>
+       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+           <StatusBar style="auto" />
       <View
-        style={[styles.header, { paddingTop: insets.top + 10 }]}
+        style={[styles.header]}
       >
         <Pressable
           onPress={() => router.back()}
@@ -480,12 +483,7 @@ useEffect(() => {
         </View>
       )}
 
-      <View    style={[
-    styles.inputContainer,
-    {
-      paddingBottom: keyboardVisible
-        ? 8
-        : Math.max(insets.bottom, 8),
+      <View    style={[ styles.inputContainer,{ paddingBottom: keyboardVisible? 8: Math.max(insets.bottom, 8),
     },
   ]}>
         <TextInput
@@ -529,6 +527,7 @@ useEffect(() => {
     </>
   )}
 </KeyboardAvoidingView>
+</SafeAreaView>
     </ProtectedRoute>
   );
 }

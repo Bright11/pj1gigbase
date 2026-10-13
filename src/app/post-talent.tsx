@@ -11,7 +11,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   Pressable,
-  StatusBar,
 } from 'react-native';
 
 import CreateTalentForm from '@/features/talents/CreateTalentForm';
@@ -23,6 +22,8 @@ import { Talent } from '@/types/Talent';
 import TalentVideoSection from '@/utils/TalentVideoSection';
 import { getTalent } from '@/services/talent.service';
 import TalentPhotoSection from '@/utils/TalentPhotoSource';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 
 export default function PostTalentScreen() {
   const [step, setStep] = useState(1);
@@ -220,9 +221,9 @@ export default function PostTalentScreen() {
 
   return (
     <ProtectedRoute>
+       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+            <StatusBar style="auto" />
       <View style={styles.screen}>
-        <StatusBar barStyle="light-content" />
-
         {/* Step Header */}
         <View style={styles.stepHeader}>
           <Text style={styles.stepTitle}>
@@ -353,6 +354,7 @@ export default function PostTalentScreen() {
          
         </View>
       </View>
+      </SafeAreaView>
     </ProtectedRoute>
   );
 }

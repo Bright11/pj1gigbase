@@ -20,6 +20,9 @@ import TalentVideoSection from '@/utils/TalentVideoSection';
 import TalentPhotoSection from '@/utils/TalentPhotoSource';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AvailabilityToggle from '@/utils/AvailabilityToggle';
+import { ProtectedRoute } from '@/utils/ProtectedRoute';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 
 
 export default function ManageTalentScreen() {
@@ -146,6 +149,9 @@ const handleDeleteTalent = (talentId: number) => {
   }
 
   return (
+    <ProtectedRoute>
+       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+           <StatusBar style="auto" />
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
@@ -234,43 +240,7 @@ const handleDeleteTalent = (talentId: number) => {
       </Pressable>
 
       {/* Photos */}
-      {/* <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>
-            Photos 
-          </Text>
-
-          <Pressable
-            onPress={
-              addPhotos
-            }
-          >
-            <Text style={styles.addText}>
-              + Add Photo
-            </Text>
-          </Pressable> 
-        </View>
-
-        {talent.gallery_images.length === 0 ? (
-          <View style={styles.emptyMedia}>
-            <Text style={styles.emptyMediaText}>
-              No photos added yet.
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.imageGrid}>
-            {talent.gallery_images.map((image) => (
-              image.image_url ? (
-                <Image
-                  key={image.id}
-                  source={{ uri: image.image_url }}
-                  style={styles.galleryImage}
-                />
-              ) : null
-            ))}
-          </View>
-        )}
-      </View> */}
+    
 
       <TalentPhotoSection talent={talent} onRefresh={loadTalent}/>
       <TalentVideoSection
@@ -282,6 +252,8 @@ const handleDeleteTalent = (talentId: number) => {
   <Text style={{alignItems:"center",textAlign:'center', color:Mycolors.whitecolor,fontSize:18}}>Delet Talent </Text>
 </Pressable>
     </ScrollView>
+    </SafeAreaView>
+    </ProtectedRoute>
   );
 }
 

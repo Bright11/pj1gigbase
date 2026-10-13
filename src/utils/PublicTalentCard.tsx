@@ -276,7 +276,7 @@ export default function PublicTalentCard({
               numberOfLines={1}
             >
               {talent.currency}{' '}
-              {talent.hourly_rate}
+              {talent.hourly_rate || talent?.fixed_rate}
             </Text>
 
             <Text style={styles.priceSuffix}>
@@ -303,7 +303,11 @@ export default function PublicTalentCard({
               </Pressable>
             ) : null}
 
-            <Pressable
+            
+          </View>
+          
+        </View>
+        <Pressable
               style={({ pressed }) => [
                 styles.viewButton,
                 pressed && styles.buttonPressed,
@@ -320,8 +324,6 @@ export default function PublicTalentCard({
                 color={Mycolors.primarycolor}
               />
             </Pressable>
-          </View>
-        </View>
       </View>
     </Pressable>
   );

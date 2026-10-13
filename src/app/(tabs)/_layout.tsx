@@ -76,7 +76,25 @@ export default function TabsLayout(): ReactElement {
           <Tabs.Screen
             key={tab.name}
             name={tab.name}
-            listeners={tab.protected ? guardTab(tab.name) : undefined}
+            // listeners={tab.protected ? guardTab(tab.name) : undefined}
+            
+listeners={
+  tab.protected
+    ? guardTab(tab.name)
+    : tab.name === "services"
+      ? {
+          tabPress: (e) => {
+            e.preventDefault();
+
+            router.navigate({
+              pathname: "/services",
+              params: { category: undefined },
+            });
+          },
+        }
+      : undefined
+}
+
             options={{
               title: tab.title,
               tabBarIcon: ({ color, size }) => (

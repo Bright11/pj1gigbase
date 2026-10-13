@@ -16,6 +16,8 @@ import type { Conversation } from '@/types/chat';
 import { getConversations } from '@/services/chat.service';
 import { useAuthStore } from '@/store/auth.store';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 
 export default function ConversationsScreen() {
   const navigation = useNavigation();
@@ -219,6 +221,8 @@ export default function ConversationsScreen() {
 
   return (
     <ProtectedRoute>
+       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+           <StatusBar style="auto" />
       <View style={styles.container}>
         
 
@@ -265,6 +269,7 @@ export default function ConversationsScreen() {
           />
         )}
       </View>
+      </SafeAreaView>
     </ProtectedRoute>
   );
 }

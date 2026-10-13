@@ -19,7 +19,7 @@ import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { PublicTalent } from '@/types/Talent';
 import { getPublicTalentBySlug } from '@/services/talent.service';
@@ -30,6 +30,8 @@ import { createConversation } from '@/services/chat.service';
 import TalentReviewSection from '@/features/reviews/TalentReviewSection';
 import ShareTalentButton from '@/features/talents/ShareTalentButton';
 import { optimizeCloudinaryImage } from '@/utils/cloudinaryImage';
+import { ProtectedRoute } from '@/utils/ProtectedRoute';
+import { StatusBar } from 'expo-status-bar';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -640,7 +642,11 @@ export default function TalentDetailsScreen() {
   /* UI                                                                      */
   /* ---------------------------------------------------------------------- */
 
+  
   return (
+    <ProtectedRoute>
+       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+            <StatusBar style="auto" />
     <View style={styles.screen}>
       <Animated.ScrollView
         style={{
@@ -947,6 +953,8 @@ export default function TalentDetailsScreen() {
         </View>
       )}
     </View>
+    </SafeAreaView>
+    </ProtectedRoute>
   );
 }
 

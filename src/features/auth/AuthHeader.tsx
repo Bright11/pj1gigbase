@@ -20,7 +20,8 @@ export function AuthHeader({title,subtitle,newstyles}:AuthHeaderProps){
 
 const styles = StyleSheet.create({
     container:{
-        marginBottom:12
+        marginBottom:12,
+        marginLeft:20
     },
     title:{
         fontSize:30,

@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, TouchableOpacity, Alert, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, TouchableOpacity, Alert } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Link, useRoute, router, useNavigation, useFocusEffect } from 'expo-router';
 import { ReactElement, useCallback, useLayoutEffect, useState } from 'react';
@@ -8,6 +8,8 @@ import AvailabilityToggle from '@/utils/AvailabilityToggle';
 import { updateUserAvailability } from '@/services/profile.service';
 import { useAuthStore } from '@/store/auth.store';
 import { ProtectedRoute } from '@/utils/ProtectedRoute';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 
 
 
@@ -111,7 +113,8 @@ export default function DashboardContent():ReactElement {
 
   return (
 <ProtectedRoute>
-     <StatusBar barStyle="light-content" />
+    <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+      <StatusBar style="auto" />
      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.headerBlock}>
         <Text style={styles.greeting}>Welcome back</Text>
@@ -189,7 +192,7 @@ export default function DashboardContent():ReactElement {
       <Text style={styles.sectionLabel}>Quick Actions</Text>
 
       <View style={styles.actionList}>
-        <Link href="/chat/inbox" style={[styles.actionRow, styles.actionRowBorder]}>
+        <Pressable onPress={()=> router.push("/chat/inbox")} style={[styles.actionRow, styles.actionRowBorder]}>
           <View style={styles.actionLeft}>
             <View style={styles.actionIconWrap}>
               <Ionicons name="mail-outline" size={18} color="#111827" />
@@ -197,9 +200,9 @@ export default function DashboardContent():ReactElement {
             <Text style={styles.actionLabel}>My Inbox</Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color="#C1C5CD" />
-        </Link>
+        </Pressable>
 
-        <Link href="/post-talent" style={[styles.actionRow, styles.actionRowBorder]}>
+        <Pressable onPress={()=> router.push('/post-talent')} style={[styles.actionRow, styles.actionRowBorder]}>
           <View style={styles.actionLeft}>
             <View style={styles.actionIconWrap}>
               <Ionicons name="add-circle-outline" size={18} color="#111827" />
@@ -207,9 +210,9 @@ export default function DashboardContent():ReactElement {
             <Text style={styles.actionLabel}>Create post</Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color="#C1C5CD" />
-        </Link>
+        </Pressable>
 
-        <Link href="/my-talents" style={[styles.actionRow, styles.actionRowBorder]}>
+        <Pressable onPress={()=> router.push("/my-talents")}  style={[styles.actionRow, styles.actionRowBorder]}>
           <View style={styles.actionLeft}>
             <View style={styles.actionIconWrap}>
               <Ionicons name="briefcase-outline" size={18} color="#111827" />
@@ -217,7 +220,7 @@ export default function DashboardContent():ReactElement {
             <Text style={styles.actionLabel}>My Talents</Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color="#C1C5CD" />
-        </Link>
+        </Pressable>
 
         <Pressable
           style={[styles.actionRow, styles.actionRowBorder]}
@@ -297,6 +300,7 @@ export default function DashboardContent():ReactElement {
 
       <View style={{ height: 24 }} />
     </ScrollView>
+    </SafeAreaView>
 </ProtectedRoute>
   );
 }
@@ -401,6 +405,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#F0F1F3',
+
   },
   actionRow: {
     flexDirection: 'row',
@@ -408,10 +413,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 14,
     paddingHorizontal: 16,
+    
   },
   actionRowBorder: {
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
+    alignItems:'center',
+   
+    justifyContent:'space-between'
   },
   actionLeft: {
     flexDirection: 'row',

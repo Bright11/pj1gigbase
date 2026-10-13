@@ -1,4 +1,4 @@
-import { View, Text , StyleSheet, TouchableOpacity, Pressable} from 'react-native'
+import { View, Text , StyleSheet, TouchableOpacity, Pressable, ScrollView} from 'react-native'
 import React, { useLayoutEffect } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { AuthHeader } from '@/features/auth/AuthHeader'
@@ -6,6 +6,7 @@ import { LoginForm } from '@/features/auth/LoginForm'
 import { router, useNavigation } from 'expo-router'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { Mycolors } from '@/constants/mycolors'
+import { StatusBar } from 'expo-status-bar'
 
 export default function LoginScreen() {
     const navigation=useNavigation()
@@ -38,19 +39,19 @@ export default function LoginScreen() {
 }, [navigation]);
   return (
    <SafeAreaView style={styles.safeArea}>
-    <View style={styles.container}>
-     
-         <AuthHeader
+      <StatusBar style="auto" />
+   
+     <ScrollView>
+  <AuthHeader
         title='Welcome back'
         subtitle='Login to your PJ1 GIGBASE account'
-        newstyles={{color:Mycolors.blackcolor}}
+        newstyles={{color:Mycolors.whitecolor}}
         />
-   
-       
         <LoginForm/>
        
+     </ScrollView>
+       
 
-    </View>
 
    </SafeAreaView>
   )
@@ -61,12 +62,12 @@ const styles = StyleSheet.create({
         flex:1,
         // backgroundColor:Mycolors.whitecolor
     },
-    container:{
-        flex:1,
-        paddingHorizontal:24,
-        // paddingTop:40,
-        //  backgroundColor:Mycolors.whitecolor
-    },
+    // container:{
+    //     flex:1,
+    //     paddingHorizontal:24,
+    //     // paddingTop:40,
+    //     //  backgroundColor:Mycolors.whitecolor
+    // },
     topheader:{
       backgroundColor:Mycolors.whitecolor,
       paddingTop:6,

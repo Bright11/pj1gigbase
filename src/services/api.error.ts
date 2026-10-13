@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 
 export const getApiErrorMessage = (
@@ -7,7 +8,6 @@ export const getApiErrorMessage = (
     return 'Something went wrong. Please try again.';
   }
 
-  // Server responded with an error
   if (error.response) {
     const data = error.response.data;
 
@@ -16,28 +16,63 @@ export const getApiErrorMessage = (
       return data.detail;
     }
 
-    // DRF field validation errors
+    // Handle your backend response:
+    // { message: "...", errors: { username: ["..."] } }
     if (data && typeof data === 'object') {
+      const validationErrors = data.errors;
+
+      if (
+        validationErrors &&
+        typeof validationErrors === 'object'
+      ) {
+        const messages: string[] = [];
+
+        Object.entries(validationErrors).forEach(
+          ([field, value]) => {
+            if (Array.isArray(value)) {
+              messages.push(
+                ...value.filter(
+                  (item): item is string =>
+                    typeof item === 'string',
+                ),
+              );
+            } else if (typeof value === 'string') {
+              messages.push(value);
+            }
+          },
+        );
+
+        if (messages.length > 0) {
+          return messages.join('\n');
+        }
+      }
+
+      // Handle standard DRF field errors
       const messages: string[] = [];
 
-      Object.entries(data).forEach(
-        ([field, value]) => {
-          if (Array.isArray(value)) {
-            messages.push(
-              `${field}: ${value.join(', ')}`
-            );
-          } else if (typeof value === 'string') {
-            messages.push(`${field}: ${value}`);
-          }
-        },
-      );
+      Object.entries(data).forEach(([field, value]) => {
+        if (field === 'message' || field === 'errors') {
+          return;
+        }
+
+        if (Array.isArray(value)) {
+          messages.push(`${field}: ${value.join(', ')}`);
+        } else if (typeof value === 'string') {
+          messages.push(`${field}: ${value}`);
+        }
+      });
 
       if (messages.length > 0) {
         return messages.join('\n');
       }
+
+      // General API message, used only when no specific
+      // validation error is available
+      if (typeof data.message === 'string') {
+        return data.message;
+      }
     }
 
-    // Fallback if server returned something unexpected
     if (typeof data === 'string') {
       return data;
     }
@@ -45,7 +80,6 @@ export const getApiErrorMessage = (
     return `Request failed with status ${error.response.status}.`;
   }
 
-  // Request was made but no response received
   if (error.request) {
     return 'Unable to reach the server. Please check your internet connection.';
   }

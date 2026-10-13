@@ -16,6 +16,8 @@ import type { Booking } from '@/types/booking';
 import { Mycolors } from '@/constants/mycolors';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { ProtectedRoute } from '@/utils/ProtectedRoute';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 
 export default function MyBookingsScreen() {
   const navigation = useNavigation();
@@ -312,6 +314,8 @@ export default function MyBookingsScreen() {
 
   return (
     <ProtectedRoute>
+       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+          <StatusBar style="auto" />
       <View style={styles.container}>
         <FlatList
           data={bookings}
@@ -374,6 +378,7 @@ export default function MyBookingsScreen() {
           }
         />
       </View>
+      </SafeAreaView>
     </ProtectedRoute>
   );
 }

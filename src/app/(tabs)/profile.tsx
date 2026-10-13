@@ -6,7 +6,6 @@ import {
   Image,
   Pressable,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   View,
@@ -35,6 +34,8 @@ import {
   updateProfileImage,
 } from '@/services/profile.service';
 import { optimizeCloudinaryImage } from '@/utils/cloudinaryImage';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 
 export default function ProfileScreen() {
   const user = useAuthStore(
@@ -257,7 +258,8 @@ export default function ProfileScreen() {
 
   return (
     <ProtectedRoute>
-       <StatusBar barStyle="light-content" />
+     <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+         <StatusBar style="auto" />
 
       <ScrollView
         style={styles.container}
@@ -428,7 +430,7 @@ export default function ProfileScreen() {
             icon="call-outline"
             label="Phone"
             value={
-              profile.phone_number ||
+              user?.phone_number ||
               'Not provided'
             }
           />
@@ -645,6 +647,7 @@ export default function ProfileScreen() {
         </Text>
 
       </ScrollView>
+      </SafeAreaView>
     </ProtectedRoute>
   );
 }

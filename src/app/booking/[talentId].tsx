@@ -40,6 +40,8 @@ import BookingCalendar from '@/utils/BookingCalendar';
 import { ProtectedRoute } from '@/utils/ProtectedRoute';
 
 import { useAuthStore } from '@/store/auth.store';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 
 export default function BookingScreen() {
   const { talentId } = useLocalSearchParams();
@@ -311,8 +313,11 @@ export default function BookingScreen() {
     return null;
   }
 
+
   return (
     <ProtectedRoute>
+       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+           <StatusBar style="auto" />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={
@@ -618,6 +623,7 @@ export default function BookingScreen() {
 
         </ScrollView>
       </KeyboardAvoidingView>
+      </SafeAreaView>
     </ProtectedRoute>
   );
 }

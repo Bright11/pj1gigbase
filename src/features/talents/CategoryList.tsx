@@ -11,7 +11,6 @@ import {
 import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
 
-import { getcategories } from '@/services/category.service';
 import { Category } from '@/types/category';
 import { Mycolors } from '@/constants/mycolors';
 import { publicAPI } from '@/services/api';
@@ -144,6 +143,10 @@ if (isActive) {
     contentFit="cover"
     cachePolicy="memory-disk"
     transition={200}
+   recyclingKey={String(category.id)}    // expects a string
+    placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
+    accessibilityLabel={`${category.name} category`}
+    onError={(e) => console.warn('Image failed:', category.id, e.error)}
   />
 ) : (
   <View style={styles.cardImage} />

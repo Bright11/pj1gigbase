@@ -19,6 +19,8 @@ import Feather from '@expo/vector-icons/Feather';
 
 import { Mycolors } from '@/constants/mycolors';
 import { ProtectedRoute } from '@/utils/ProtectedRoute';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 
 export default function MyTalentsScreen() {
   const [talents, setTalents] = useState<Talent[]>([]);
@@ -181,6 +183,7 @@ export default function MyTalentsScreen() {
   if (isLoading) {
     return (
      <ProtectedRoute>
+
        <View style={styles.center}>
         <ActivityIndicator size="large" color="#111827" />
         <Text style={styles.loadingText}>Loading your talents...</Text>
@@ -191,6 +194,8 @@ export default function MyTalentsScreen() {
 
   return (
   <ProtectedRoute>
+     <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+        <StatusBar style="auto" />
       <View style={styles.container}>
       {talents.length === 0 ? (
         <View style={styles.empty}>
@@ -226,6 +231,7 @@ export default function MyTalentsScreen() {
         />
       )}
     </View>
+    </SafeAreaView>
   </ProtectedRoute>
   );
 }

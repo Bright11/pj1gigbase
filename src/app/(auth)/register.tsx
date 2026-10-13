@@ -12,6 +12,7 @@ import { RegisterForm } from '@/features/auth/RegisterForm';
 import { router, useNavigation } from 'expo-router';
 import { Mycolors } from '@/constants/mycolors';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { StatusBar } from 'expo-status-bar';
 
 export default function RegisterScreen() {
   const navigation = useNavigation();
@@ -48,21 +49,22 @@ export default function RegisterScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+         <StatusBar style="auto" />
       <Pressable
         style={styles.dismissKeyboard}
         onPress={Keyboard.dismiss}
       >
-        <View style={styles.container}>
+        
           <AuthHeader
             title="Welcome to PJ1GIGBASE"
             subtitle=""
             newstyles={{
-              color: Mycolors.blackcolor,
+              color: Mycolors.whitecolor,
             }}
           />
 
           <RegisterForm />
-        </View>
+    
       </Pressable>
     </SafeAreaView>
   );

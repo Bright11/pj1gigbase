@@ -1,17 +1,26 @@
-import React, { useLayoutEffect, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
+  StyleProp,
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
+  TextInputProps,
   View,
+  ViewStyle,
 } from 'react-native';
 import { router, useNavigation } from 'expo-router';
+import axios from 'axios';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 
 import { Mycolors } from '@/constants/mycolors';
 import { ProtectedRoute } from '@/utils/ProtectedRoute';
@@ -20,55 +29,270 @@ import {
   updateProfile,
   UpdateProfileData,
 } from '@/services/profile.service';
-import Ionicons from '@expo/vector-icons/Ionicons';
+
+/* -------------------------------------------------------------------------- */
+/* Config                                                                      */
+/* -------------------------------------------------------------------------- */
+
+const BIO_MAX_LENGTH = 500; // match your backend limit
+
+/**
+ * `value` is what gets sent to the API. Change these to match the choices
+ * your backend accepts (e.g. 'M' / 'F').
+ */
+const GENDER_OPTIONS = [
+  { label: 'Male', value: 'male' },
+  { label: 'Female', value: 'female' },
+  { label: 'Other', value: 'other' },
+] as const;
+
+const DEFAULT_DOB = new Date(2000, 0, 1);
+
+const COLORS = {
+  screen: '#FAFAFA',
+  card: '#FFFFFF',
+  border: '#E5E7EB',
+  cardBorder: '#F0F1F3',
+  text: '#111827',
+  label: '#4B5563',
+  muted: '#6B7280', // readable on white (about 4.8:1)
+  disabledBg: '#F3F4F6',
+  errorBg: '#FDECEC',
+  errorText: '#B42318',
+} as const;
+
+/* -------------------------------------------------------------------------- */
+/* Helpers                                                                     */
+/* -------------------------------------------------------------------------- */
+
+type AuthUser = NonNullable<ReturnType<typeof useAuthStore.getState>['user']>;
+
+interface FormState {
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+  dateOfBirth: string; // YYYY-MM-DD
+  gender: string;
+  country: string;
+  city: string;
+  bio: string;
+}
+
+function toForm(user: AuthUser | null): FormState {
+  return {
+    firstName: user?.profile.first_name ?? '',
+    lastName: user?.profile.last_name ?? '',
+    phoneNumber: user?.phone_number ?? '',
+    dateOfBirth: user?.profile.date_of_birth ?? '',
+    gender: user?.profile.gender ?? '',
+    country: user?.profile.country ?? '',
+    city: user?.profile.city ?? '',
+    bio: user?.profile.bio ?? '',
+  };
+}
+
+/** Local-time YYYY-MM-DD (toISOString would shift the day by timezone). */
+function toISODate(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function parseISODate(value: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return null;
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function getErrorMessage(error: unknown): string {
+  const fallback = 'Unable to update your profile.';
+  if (!axios.isAxiosError(error)) return fallback;
+
+  const data: unknown = error.response?.data;
+  if (data && typeof data === 'object') {
+    const record = data as Record<string, unknown>;
+    if (typeof record.detail === 'string') return record.detail;
+
+    // DRF field errors: { phone_number: ["Enter a valid phone number."] }
+    const first = Object.values(record)[0];
+    if (Array.isArray(first) && typeof first[0] === 'string') return first[0];
+    if (typeof first === 'string') return first;
+  }
+  return fallback;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Small components                                                            */
+/* -------------------------------------------------------------------------- */
+
+function LockedPill() {
+  return (
+    <View style={styles.lockedPill}>
+      <Ionicons name="lock-closed" size={10} color={COLORS.muted} />
+      <Text style={styles.lockedPillText}>Locked</Text>
+    </View>
+  );
+}
+
+interface FieldProps extends TextInputProps {
+  label: string;
+  locked?: boolean;
+  containerStyle?: StyleProp<ViewStyle>;
+}
+
+function Field({ label, locked, containerStyle, style, ...inputProps }: FieldProps) {
+  return (
+    <View style={[styles.fieldGroup, containerStyle]}>
+      <View style={styles.labelRow}>
+        <Text style={styles.label}>{label}</Text>
+        {locked && <LockedPill />}
+      </View>
+      <TextInput
+        accessibilityLabel={label}
+        placeholderTextColor={COLORS.muted}
+        {...inputProps}
+        editable={!locked && inputProps.editable !== false}
+        style={[styles.input, locked && styles.inputDisabled, style]}
+      />
+    </View>
+  );
+}
+
+function SectionHeader({
+  icon,
+  title,
+}: {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  title: string;
+}) {
+  return (
+    <View style={styles.sectionHeaderRow}>
+      <Ionicons name={icon} size={16} color={COLORS.muted} />
+      <Text style={styles.sectionTitle} accessibilityRole="header">
+        {title}
+      </Text>
+    </View>
+  );
+}
+
+interface DateFieldProps {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+}
+
+function DateField({ label, value, onChange, disabled }: DateFieldProps) {
+  const [show, setShow] = useState(false);
+  const date = parseISODate(value) ?? DEFAULT_DOB;
+
+  const handleChange = (event: DateTimePickerEvent, selected?: Date) => {
+    // Android shows a dialog: close it whatever the outcome.
+    if (Platform.OS === 'android') setShow(false);
+    if (event.type === 'set' && selected) onChange(toISODate(selected));
+  };
+
+  return (
+    <View style={styles.fieldGroup}>
+      <Text style={[styles.label, styles.labelSpaced]}>{label}</Text>
+
+      <Pressable
+        onPress={() => setShow(true)}
+        disabled={disabled}
+        accessibilityRole="button"
+        accessibilityLabel={`${label}, ${value || 'not set'}`}
+        style={[styles.input, styles.dateButton]}
+      >
+        <Text style={value ? styles.dateText : styles.datePlaceholder}>
+          {value || 'Select date'}
+        </Text>
+        <Ionicons name="calendar-outline" size={18} color={COLORS.muted} />
+      </Pressable>
+
+      {show && (
+        <DateTimePicker
+          value={date}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          maximumDate={new Date()}
+          onChange={handleChange}
+        />
+      )}
+
+      {show && Platform.OS === 'ios' && (
+        <Pressable
+          onPress={() => setShow(false)}
+          accessibilityRole="button"
+          style={styles.doneButton}
+        >
+          <Text style={styles.doneText}>Done</Text>
+        </Pressable>
+      )}
+    </View>
+  );
+}
+
+function GenderSelector({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <View style={styles.fieldGroup}>
+      <Text style={[styles.label, styles.labelSpaced]}>Gender</Text>
+
+      <View style={styles.chipRow}>
+        {GENDER_OPTIONS.map((option) => {
+          const selected = value.toLowerCase() === option.value;
+          return (
+            <Pressable
+              key={option.value}
+              onPress={() => onChange(option.value)}
+              disabled={disabled}
+              accessibilityRole="radio"
+              accessibilityState={{ selected }}
+              style={[styles.chip, selected && styles.chipSelected]}
+            >
+              <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                {option.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Screen                                                                      */
+/* -------------------------------------------------------------------------- */
 
 export default function EditProfileScreen() {
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
   const navigation = useNavigation();
 
-useLayoutEffect(() => {
-  navigation.setOptions({
-    headerShown: true,
-    headerTitle: "",
-    headerStyle: {
-      backgroundColor: Mycolors.primarycolor,
-    },
-    headerLeft: () => (
-      <Pressable
-        onPress={() => navigation.goBack()}
-        style={{
-          marginLeft: 10,
-          padding: 8,
-        }}
-      >
-        <Ionicons
-          name="arrow-back"
-          size={24}
-          color="white"
-        />
-      </Pressable>
-    ),
-    headerRight:()=>(
-      <Text style={[styles.title,{color:Mycolors.whitecolor}]}>Edit profie</Text>
-    )
-  });
-}, [navigation]);
-
-
-  const [firstName, setFirstName] = useState(user?.profile.first_name ?? '');
-  const [lastName, setLastName] = useState(user?.profile.last_name ?? '');
-  const [username, setUsername] = useState(user?.username ?? '');
-  const [email, setEmail] = useState(user?.email ?? '');
-  const [phoneNumber, setPhoneNumber] = useState(user?.profile.phone_number ?? '');
-  const [dateOfBirth, setDateOfBirth] = useState(user?.profile.date_of_birth ?? '');
-  const [gender, setGender] = useState(user?.profile.gender ?? '');
-  const [country, setCountry] = useState(user?.profile.country ?? '');
-  const [city, setCity] = useState(user?.profile.city ?? '');
-  const [bio, setBio] = useState(user?.profile.bio ?? '');
-
+  const initial = useMemo(() => toForm(user), [user]);
+  const [form, setForm] = useState<FormState>(initial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      title: 'Edit profile',
+      headerStyle: { backgroundColor: Mycolors.primarycolor },
+      headerTintColor: Mycolors.whitecolor, // back arrow + title
+      headerShadowVisible: false,
+    });
+  }, [navigation]);
 
   if (!user) {
     return (
@@ -80,269 +304,218 @@ useLayoutEffect(() => {
     );
   }
 
+  const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
+    setForm((prev) => ({ ...prev, [key]: value }));
+
+  const hasChanges = (Object.keys(form) as (keyof FormState)[]).some(
+    (key) => form[key] !== initial[key],
+  );
+
   const handleSave = async () => {
+    if (saving || !hasChanges) return;
+
     try {
       setSaving(true);
       setError(null);
 
       const data: UpdateProfileData = {
-        first_name: firstName.trim(),
-        last_name: lastName.trim(),
-        phone_number: phoneNumber.trim(),
-        date_of_birth: dateOfBirth.trim() || undefined,
-        gender: gender.trim() || undefined,
-        country: country.trim(),
-        city: city.trim(),
-        bio: bio.trim() || undefined,
+        first_name: form.firstName.trim(),
+        last_name: form.lastName.trim(),
+        phone_number: form.phoneNumber.trim(),
+        date_of_birth: form.dateOfBirth.trim() || undefined,
+        gender: form.gender.trim() || undefined,
+        country: form.country.trim(),
+        city: form.city.trim(),
+        bio: form.bio.trim() || undefined,
       };
 
       await updateProfile(data);
 
-      router.back();
-    } catch (error: any) {
-      console.log('Profile update error:', error?.response?.data || error);
+      // Keep the auth store in sync so other screens show the new values.
+      // If updateProfile returns the updated user, prefer: setUser(updated).
+      setUser({
+        ...user,
+        phone_number: form.phoneNumber.trim(),
+        profile: {
+          ...user.profile,
+          first_name: form.firstName.trim(),
+          last_name: form.lastName.trim(),
+          date_of_birth: form.dateOfBirth.trim(),
+          gender: form.gender.trim(),
+          country: form.country.trim(),
+          city: form.city.trim(),
+          bio: form.bio.trim(),
+        },
+      });
 
-      setError(
-        error?.response?.data?.detail || 'Unable to update your profile.'
-      );
+      router.back();
+    } catch (err) {
+      if (__DEV__) console.log('Profile update error:', err);
+      setError(getErrorMessage(err));
     } finally {
       setSaving(false);
     }
   };
 
+  const saveDisabled = saving || !hasChanges;
+
   return (
     <ProtectedRoute>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <ScrollView
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          {/* <View style={styles.header}>
-            <Pressable onPress={() => router.back()} style={styles.backButton}>
-              <Ionicons name="arrow-back" size={20} color="#111827" />
-            </Pressable>
+      {/* Header is visible, so only the bottom inset is needed (gesture bar). */}
+      <SafeAreaView style={styles.safe} edges={['bottom']}>
+        <StatusBar style="light" />
 
-            <Text style={styles.title}>Edit Profile</Text>
-
-            <View style={styles.headerSpacer} />
-          </View> */}
-
-          {error && (
-            <View style={styles.errorBox}>
-              <Ionicons name="alert-circle" size={16} color="#B42318" />
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          )}
-
-          {/* Account Information */}
-          <View style={styles.sectionHeaderRow}>
-            <Ionicons name="shield-checkmark-outline" size={16} color="#9CA3AF" />
-            <Text style={styles.sectionTitle}>Account Information</Text>
-          </View>
-
-          <View style={styles.card}>
-            <View style={styles.fieldGroup}>
-              <View style={styles.labelRow}>
-                <Text style={styles.label}>Username</Text>
-                <View style={styles.lockedPill}>
-                  <Ionicons name="lock-closed" size={10} color="#9CA3AF" />
-                  <Text style={styles.lockedPillText}>Locked</Text>
-                </View>
+        <KeyboardAvoidingView style={styles.container} behavior="padding">
+          <ScrollView
+            contentContainerStyle={styles.content}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            showsVerticalScrollIndicator={false}
+          >
+            {error && (
+              <View style={styles.errorBox} accessibilityRole="alert">
+                <Ionicons name="alert-circle" size={16} color={COLORS.errorText} />
+                <Text style={styles.errorText}>{error}</Text>
               </View>
-              <TextInput
-                style={[styles.input, styles.inputDisabled]}
-                value={username}
-                onChangeText={setUsername}
+            )}
+
+            <SectionHeader icon="shield-checkmark-outline" title="Account Information" />
+            <View style={styles.card}>
+              <Field
+                label="Username"
+                value={user.username ?? ''}
+                locked
                 autoCapitalize="none"
-                editable={false}
               />
-            </View>
-
-            <View style={styles.fieldGroup}>
-              <View style={styles.labelRow}>
-                <Text style={styles.label}>Email</Text>
-                <View style={styles.lockedPill}>
-                  <Ionicons name="lock-closed" size={10} color="#9CA3AF" />
-                  <Text style={styles.lockedPillText}>Locked</Text>
-                </View>
-              </View>
-              <TextInput
-                style={[styles.input, styles.inputDisabled]}
-                value={email}
-                onChangeText={setEmail}
+              <Field
+                label="Email"
+                value={user.email ?? ''}
+                locked
                 keyboardType="email-address"
                 autoCapitalize="none"
-                editable={false}
               />
             </View>
-          </View>
 
-          {/* Personal Information */}
-          <View style={styles.sectionHeaderRow}>
-            <Ionicons name="person-outline" size={16} color="#9CA3AF" />
-            <Text style={styles.sectionTitle}>Personal Information</Text>
-          </View>
-
-          <View style={styles.card}>
-            <View style={styles.row}>
-              <View style={[styles.fieldGroup, styles.half]}>
-                <Text style={styles.label}>First Name</Text>
-                <TextInput
-                  style={styles.input}
-                  value={firstName}
-                  onChangeText={setFirstName}
+            <SectionHeader icon="person-outline" title="Personal Information" />
+            <View style={styles.card}>
+              <View style={styles.row}>
+                <Field
+                  label="First Name"
+                  containerStyle={styles.half}
+                  value={form.firstName}
+                  onChangeText={(v) => update('firstName', v)}
                   editable={!saving}
+                  autoComplete="given-name"
+                />
+                <Field
+                  label="Last Name"
+                  containerStyle={styles.half}
+                  value={form.lastName}
+                  onChangeText={(v) => update('lastName', v)}
+                  editable={!saving}
+                  autoComplete="family-name"
                 />
               </View>
 
-              <View style={[styles.fieldGroup, styles.half]}>
-                <Text style={styles.label}>Last Name</Text>
-                <TextInput
-                  style={styles.input}
-                  value={lastName}
-                  onChangeText={setLastName}
-                  editable={!saving}
-                />
-              </View>
-            </View>
-
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>Phone Number</Text>
-              <TextInput
-                style={styles.input}
-                value={phoneNumber}
-                onChangeText={setPhoneNumber}
+              <Field
+                label="Phone Number"
+                value={form.phoneNumber}
+                onChangeText={(v) => update('phoneNumber', v)}
                 keyboardType="phone-pad"
                 editable={!saving}
+                autoComplete="tel"
               />
-            </View>
 
-            <View style={styles.row}>
-              <View style={[styles.fieldGroup, styles.half]}>
-                <Text style={styles.label}>Date of Birth</Text>
-                <TextInput
-                  style={styles.input}
-                  value={dateOfBirth}
-                  onChangeText={setDateOfBirth}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor="#B0B4BB"
+              <DateField
+                label="Date of Birth"
+                value={form.dateOfBirth}
+                onChange={(v) => update('dateOfBirth', v)}
+                disabled={saving}
+              />
+
+              <GenderSelector
+                value={form.gender}
+                onChange={(v) => update('gender', v)}
+                disabled={saving}
+              />
+
+              <View style={styles.row}>
+                <Field
+                  label="Country"
+                  containerStyle={styles.half}
+                  value={form.country}
+                  onChangeText={(v) => update('country', v)}
+                  editable={!saving}
+                />
+                <Field
+                  label="City"
+                  containerStyle={styles.half}
+                  value={form.city}
+                  onChangeText={(v) => update('city', v)}
                   editable={!saving}
                 />
               </View>
 
-              <View style={[styles.fieldGroup, styles.half]}>
-                <Text style={styles.label}>Gender</Text>
-                <TextInput
-                  style={styles.input}
-                  value={gender}
-                  onChangeText={setGender}
-                  editable={!saving}
-                />
-              </View>
-            </View>
-
-            <View style={styles.row}>
-              <View style={[styles.fieldGroup, styles.half]}>
-                <Text style={styles.label}>Country</Text>
-                <TextInput
-                  style={styles.input}
-                  value={country}
-                  onChangeText={setCountry}
-                  editable={!saving}
-                />
-              </View>
-
-              <View style={[styles.fieldGroup, styles.half]}>
-                <Text style={styles.label}>City</Text>
-                <TextInput
-                  style={styles.input}
-                  value={city}
-                  onChangeText={setCity}
-                  editable={!saving}
-                />
-              </View>
-            </View>
-
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>Bio</Text>
-              <TextInput
-                style={[styles.input, styles.bioInput]}
-                value={bio}
-                onChangeText={setBio}
+              <Field
+                label="Bio"
+                value={form.bio}
+                onChangeText={(v) => update('bio', v)}
                 multiline
+                maxLength={BIO_MAX_LENGTH}
                 textAlignVertical="top"
                 editable={!saving}
                 placeholder="Tell others a bit about yourself"
-                placeholderTextColor="#B0B4BB"
+                style={styles.bioInput}
               />
+              <Text style={styles.counter}>
+                {form.bio.length}/{BIO_MAX_LENGTH}
+              </Text>
             </View>
-          </View>
 
-          <Pressable
-            style={({ pressed }) => [
-              styles.saveButton,
-              saving && styles.disabledButton,
-              pressed && !saving && styles.saveButtonPressed,
-            ]}
-            onPress={handleSave}
-            disabled={saving}
-          >
-            {saving ? (
-              <ActivityIndicator color="#ffffff" />
-            ) : (
-              <>
-                <Ionicons name="checkmark-circle-outline" size={18} color="#fff" />
-                <Text style={styles.saveButtonText}>Save Changes</Text>
-              </>
-            )}
-          </Pressable>
-        </ScrollView>
-      </KeyboardAvoidingView>
+            <Pressable
+              onPress={handleSave}
+              disabled={saveDisabled}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: saveDisabled, busy: saving }}
+              style={({ pressed }) => [
+                styles.saveButton,
+                saveDisabled && styles.disabledButton,
+                pressed && !saveDisabled && styles.saveButtonPressed,
+              ]}
+            >
+              {saving ? (
+                <ActivityIndicator color={Mycolors.whitecolor} />
+              ) : (
+                <>
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={18}
+                    color={Mycolors.whitecolor}
+                  />
+                  <Text style={styles.saveButtonText}>Save Changes</Text>
+                </>
+              )}
+            </Pressable>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </ProtectedRoute>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FAFAFA',
-  },
+/* -------------------------------------------------------------------------- */
+/* Styles                                                                      */
+/* -------------------------------------------------------------------------- */
 
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: COLORS.screen },
+  container: { flex: 1, backgroundColor: COLORS.screen },
   content: {
     paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingTop: 16,
     paddingBottom: 48,
   },
-
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-    marginTop:50
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#F0F1F3',
-  },
-  headerSpacer: {
-    width: 40,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
-  },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   sectionHeaderRow: {
     flexDirection: 'row',
@@ -354,16 +527,16 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#9CA3AF',
+    color: COLORS.muted,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   },
 
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.card,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#F0F1F3',
+    borderColor: COLORS.cardBorder,
     padding: 16,
     marginBottom: 28,
     shadowColor: '#000',
@@ -372,17 +545,9 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
   },
 
-  row: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  half: {
-    flex: 1,
-  },
-
-  fieldGroup: {
-    marginBottom: 16,
-  },
+  row: { flexDirection: 'row', gap: 12 },
+  half: { flex: 1 },
+  fieldGroup: { marginBottom: 16 },
 
   labelRow: {
     flexDirection: 'row',
@@ -393,14 +558,15 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6B7280',
-    marginBottom: 7,
+    color: COLORS.label,
   },
+  labelSpaced: { marginBottom: 7 },
+
   lockedPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: COLORS.disabledBg,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 20,
@@ -408,28 +574,62 @@ const styles = StyleSheet.create({
   lockedPillText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#9CA3AF',
+    color: COLORS.muted,
   },
 
   input: {
     height: 50,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     fontSize: 15,
-    color: '#111827',
-    backgroundColor: '#fff',
+    color: COLORS.text,
+    backgroundColor: COLORS.card,
   },
   inputDisabled: {
-    backgroundColor: '#F9FAFB',
-    color: '#9CA3AF',
+    backgroundColor: COLORS.disabledBg,
+    color: COLORS.muted,
+  },
+  bioInput: { height: 110, paddingTop: 12 },
+  counter: {
+    alignSelf: 'flex-end',
+    marginTop: -10,
+    fontSize: 11,
+    color: COLORS.muted,
   },
 
-  bioInput: {
-    height: 110,
-    paddingTop: 12,
+  dateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
+  dateText: { fontSize: 15, color: COLORS.text },
+  datePlaceholder: { fontSize: 15, color: COLORS.muted },
+  doneButton: { alignSelf: 'flex-end', paddingVertical: 8, paddingHorizontal: 4 },
+  doneText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Mycolors.primarycolor,
+  },
+
+  chipRow: { flexDirection: 'row', gap: 10 },
+  chip: {
+    flex: 1,
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.card,
+  },
+  chipSelected: {
+    backgroundColor: Mycolors.primarycolor,
+    borderColor: Mycolors.primarycolor,
+  },
+  chipText: { fontSize: 14, fontWeight: '600', color: COLORS.label },
+  chipTextSelected: { color: Mycolors.whitecolor },
 
   saveButton: {
     flexDirection: 'row',
@@ -438,22 +638,17 @@ const styles = StyleSheet.create({
     gap: 8,
     height: 54,
     borderRadius: 14,
-    backgroundColor: Mycolors.primarycolor ?? '#007AFF',
-    shadowColor: Mycolors.primarycolor ?? '#007AFF',
+    backgroundColor: Mycolors.primarycolor,
+    shadowColor: Mycolors.primarycolor,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
     shadowRadius: 10,
     elevation: 3,
   },
-  saveButtonPressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.99 }],
-  },
-  disabledButton: {
-    opacity: 0.6,
-  },
+  saveButtonPressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
+  disabledButton: { opacity: 0.5 },
   saveButtonText: {
-    color: '#ffffff',
+    color: Mycolors.whitecolor,
     fontSize: 16,
     fontWeight: '700',
   },
@@ -462,26 +657,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#FDECEC',
+    backgroundColor: COLORS.errorBg,
     borderRadius: 12,
     padding: 12,
     marginBottom: 20,
   },
-  errorText: {
-    color: '#B42318',
-    fontSize: 13,
-    flex: 1,
-  },
-
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-     topheader:{
-      backgroundColor:Mycolors.whitecolor,
-      paddingTop:6,
-      paddingBottom:6,
-      width:"100%"
-    },
+  errorText: { color: COLORS.errorText, fontSize: 13, flex: 1 },
 });

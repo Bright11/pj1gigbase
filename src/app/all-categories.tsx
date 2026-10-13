@@ -13,6 +13,8 @@ import { router, useFocusEffect, useNavigation } from 'expo-router';
 import { getcategories } from '@/services/category.service';
 import type { Category } from '@/types/category';
 import { Mycolors } from '@/constants/mycolors';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 
 
 export default function AllCategoriesScreen() {
@@ -66,6 +68,8 @@ void loadCategories(1, true);
 );
 
 return (
+   <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+      <StatusBar style="auto" />
   <View style={styles.container}>
     <Text style={styles.heading}>All Categories</Text>
 
@@ -163,7 +167,7 @@ return (
     />
   )}
 </View>
-
+</SafeAreaView>
 
 );
 }

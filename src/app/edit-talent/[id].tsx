@@ -6,7 +6,7 @@ import {
   Pressable,
   ScrollView,
   ActivityIndicator,
-  Alert,
+  Alert
 } from 'react-native';
 import { useEffect, useState } from 'react';
 import {
@@ -27,6 +27,9 @@ import { Mycolors } from '@/constants/mycolors';
 import { getApiErrorMessage } from '@/services/api.error';
 import { Category } from '@/types/category';
 import { levelData } from '@/utils/levelData';
+import { ProtectedRoute } from '@/utils/ProtectedRoute';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 
 export default function EditTalentForm() {
 
@@ -240,6 +243,9 @@ setCategories(categoryData.results);
   }
 
   return (
+    <ProtectedRoute>
+       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+            <StatusBar style="auto" />
     <ScrollView
       showsVerticalScrollIndicator={false}
       contentContainerStyle={
@@ -472,6 +478,8 @@ setCategories(categoryData.results);
         )}
       </Pressable>
     </ScrollView>
+    </SafeAreaView>
+    </ProtectedRoute>
   );
 }
 
