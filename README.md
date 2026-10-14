@@ -16,4 +16,10 @@ TypeScript interfaces for users, login responses, registration data, etc.
 <!-- How to check if there are any typscrip errors -->
 npx tsc --noEmit
 
+~~~bash
+(Get-Content app.json) -replace '"versionCode": 13', '"versionCode": 14' | Set-Content app.json
+(Get-Content android\app\build.gradle) -replace 'versionCode 13', 'versionCode 14' | Set-Content android\app\build.gradle
 
+Select-String -Path app.json -Pattern 'versionCode'
+Select-String -Path android\app\build.gradle -Pattern 'versionCode'
+~~~

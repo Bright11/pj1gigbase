@@ -3,9 +3,9 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store'
 
 
-const API_BASE_URL = "https://9ff9-154-162-60-129.ngrok-free.app"; 
+// const API_BASE_URL = "https://9ff9-154-162-60-129.ngrok-free.app"; 
 
-// export const API_BASE_URL ='https://web-production-50fd3.up.railway.app';
+export const API_BASE_URL ='https://web-production-50fd3.up.railway.app';
 
 export const WEBSITE_BASE_URL='https://www.pj1gigbase.com'
 

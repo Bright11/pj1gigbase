@@ -25,15 +25,18 @@ export default function LoginScreen() {
           padding: 8,
         }}
       >
-        <Ionicons
+        {/* <Ionicons
           name="arrow-back"
           size={24}
           color="white"
-        />
+        /> */}
+        <Text style={{color:'white'}}>Back to Home</Text>
       </Pressable>
     ),
     headerRight:()=>(
-      <Text style={[,{color:Mycolors.whitecolor}]}>Login</Text>
+     <Pressable>
+       <Text style={[,{color:Mycolors.whitecolor}]}>Login</Text>
+     </Pressable>
     )
   });
 }, [navigation]);
